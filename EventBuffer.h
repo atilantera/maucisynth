@@ -6,12 +6,20 @@
  *
  *  Created on: 15.2.2012
  *      Author: alkim
+ *
+ * Implementation: two fixed length byte tables.
+ * One table is for receiving messages from the GUI, and the another one
+ * for Synthesizer class to process. At method swapBuffers() the byte tables
+ * are swapped.
  */
 
 #ifndef EVENTBUFFER_H_
 #define EVENTBUFFER_H_
 
 #include <pthread.h>
+#include "Synthesizer.h"
+
+#define GUI_TESTING
 #include <iostream>
 
 /* Data format in EventBuffer.buffer:
@@ -33,10 +41,7 @@
  *                      vv = value (16-bit unsigned int)
  */
 
-enum NoteSource { computerKeyboard = 1, JACK = 2};
-
 const unsigned int bufferLength = 256;
-const int maxVelocity = 127;
 
 class EventBuffer {
 public:
@@ -52,12 +57,18 @@ public:
 
 	void addParameterChange(unsigned char controller, unsigned short value);
 
-
+	unsigned char * swapBuffers(int * dataLength);
 
 private:
 	pthread_mutex_t bufferLock;
 
-	unsigned char * buffer;
+	// Two byte tables
+	unsigned char buffer1[bufferLength];
+	unsigned char buffer2[bufferLength];
+
+	unsigned char * receivingBuffer;
+
+	// How many bytes of receivingBuffer is used
 	unsigned int bufferUsed;
 
 };

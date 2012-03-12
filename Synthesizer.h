@@ -31,16 +31,20 @@ enum waveformType {
 };
 
 enum lfoFrequencyType {
-	LFO_FIXED    = 0,
-	LFO_RELATIVE = 1
+	FIXED    = 0,
+	RELATIVE = 1
 };
 
 enum lfoTargetType {
-	LFO_TO_NONE        = 0,
-	LTO_TO_FREQUENCY   = 1,
-	LFO_TO_AMPLITUDE   = 2,
-	LFO_TO_PULSE_WIDTH = 3
+	NONE        = 0,
+	FREQUENCY   = 1,
+	AMPLITUDE   = 2,
+	PULSE_WIDTH = 3
 };
+
+enum NoteSource { computerKeyboard = 1, JACK = 2};
+
+const int maxVelocity = 127;
 
 class Synthesizer {
 public:

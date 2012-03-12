@@ -12,7 +12,7 @@ SynthGui * SynthGui::guiInstance;
 SynthGui::SynthGui(EventBuffer * eventBuffer) {
 	keyboardMutex = PTHREAD_MUTEX_INITIALIZER;
 	guiInstance = this;
-	eventBuffer_ = eventBuffer;
+	synthEvents = eventBuffer;
 
 	mainWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	g_signal_connect(mainWindow, "destroy", G_CALLBACK(gtk_main_quit), NULL);
@@ -279,11 +279,11 @@ void SynthGui::createOscillator1Controls() {
 	gtk_range_set_update_policy(GTK_RANGE(slider), GTK_UPDATE_CONTINUOUS);
 	g_signal_connect(slider, "value_changed",
 		G_CALLBACK(SynthGui::sliderChangeCallback),
-		(gpointer)"osc1sustain");
+		(gpointer)"osc1release");
 	gtk_fixed_put(GTK_FIXED(fixed), slider, 186, 20);
 }
 
-gboolean SynthGui::guiFocusOutCallback(GtkWidget * widget, gpointer data) {
+gboolean SynthGui::guiFocusOutCallback() {
 	SynthGui::guiInstance->guiFocusOut();
 	return FALSE;
 }
@@ -317,7 +317,7 @@ void SynthGui::guiFocusOut() {
 		keyIsPressed[i] = false;
 	}
 	pthread_mutex_unlock(&keyboardMutex);
-	eventBuffer_->addAllNotesOff(computerKeyboard);
+	synthEvents->addAllNotesOff(computerKeyboard);
 }
 
 void SynthGui::onKeyPress(GdkEventKey * pKey) {
@@ -342,7 +342,7 @@ void SynthGui::onKeyPress(GdkEventKey * pKey) {
 			if (keyIsPressed[i] == true) {
 				keyIsPressed[i] = false;
 				midiKey = baseOctave * 12 + i;
-				eventBuffer_->addNoteOff(midiKey, computerKeyboard);
+				synthEvents->addNoteOff(midiKey, computerKeyboard);
 			}
 		}
 		baseOctave++;
@@ -352,14 +352,14 @@ void SynthGui::onKeyPress(GdkEventKey * pKey) {
 			if (keyIsPressed[i] == true) {
 				keyIsPressed[i] = false;
 				midiKey = baseOctave * 12 + i;
-				eventBuffer_->addNoteOff(midiKey, computerKeyboard);
+				synthEvents->addNoteOff(midiKey, computerKeyboard);
 			}
 		}
 		baseOctave--;
 	}
 	if (key < NUM_PIANO_KEYS) {
 		midiKey = baseOctave * 12 + key;
-		eventBuffer_->addNoteOn(midiKey, 100, computerKeyboard);
+		synthEvents->addNoteOn(midiKey, 100, computerKeyboard);
 	}
 	keyIsPressed[key] = true;
 	pthread_mutex_unlock(&keyboardMutex);
@@ -379,7 +379,7 @@ void SynthGui::onKeyRelease(GdkEventKey * pKey) {
 	pthread_mutex_lock(&keyboardMutex);
 	if (key < 25) {
 		midiKey = baseOctave * 12 + key;
-		eventBuffer_->addNoteOff(midiKey, computerKeyboard);
+		synthEvents->addNoteOff(midiKey, computerKeyboard);
 	}
 	keyIsPressed[key] = FALSE;
 	pthread_mutex_unlock(&keyboardMutex);
@@ -387,45 +387,57 @@ void SynthGui::onKeyRelease(GdkEventKey * pKey) {
 
 void SynthGui::sliderChange(GtkAdjustment * adj, gpointer data) {
 	float value = ((GtkRange *) adj)->adjustment->value;
-	GtkWidget * w = (GtkWidget *) adj;
 	char * name = (char *)data;
 
-	printf("SynthGui::sliderChange %s = %f\n", name, value);
+	unsigned char type = 255;
+	unsigned short intValue = 0;
 
-	//	if (w == osc1_attack) {
-	//		synth_parameter_change(OSC1_ATTACK, value);
-	//		return;
-	//	}
-	//	if (w == osc1_decay) {
-	//		synth_parameter_change(OSC1_DECAY, value);
-	//		return;
-	//	}
-	//	if (w == osc1_sustain) {
-	//		synth_parameter_change(OSC1_SUSTAIN, value);
-	//		return;
-	//	}
-	//	if (w == osc1_release) {
-	//		synth_parameter_change(OSC1_RELEASE, value);
-	//		return;
-	//	}
-	//	if (w == lfo1_fixed_frequency) {
-	//		synth_parameter_change(LFO1_FIXED_FREQUENCY, (int)(value * 100));
-	//		return;
-	//	}
-	//	if (w == lfo1_relative_frequency) {
-	//		synth_parameter_change(LFO1_RELATIVE_FREQUENCY, (int)(value * 100));
-	//		return;
-	//	}
-	//	if (w == lfo1_modulation_amount) {
-	//		synth_parameter_change(LFO1_MODULATION_AMOUNT, (int)(value * 100));
-	//		return;
-	//	}
-	//if (w == lowpassFilter) {
-	//	// TODO: EventBuffer-luokka käyttöön
-	//	// synth_parameter_change(FILTER_LOWPASS, (int)value);
-	//	std::cout << "SynthGui::sliderChange: lowpass filter " << value << "\n";
-	//	return;
-	//}
+	// lfo1fixed
+	// lfo1relative
+	// lfo1modulationAmount
+	// lowpassFilterFrequency
+	if (name[0] == 'l') {
+		if (name[3] == '1') {
+			intValue = value * 100;
+			if (name[4] == 'f') {
+				type = LFO1_FIXED_FREQUENCY;
+			}
+			if (name[4] == 'r') {
+				type = LFO1_RELATIVE_FREQUENCY;
+			}
+			if (name[4] == 'm') {
+				type = LFO1_MODULATION_AMOUNT;
+			}
+		}
+		if (name[1] == 'o') {
+			type = FILTER_LOWPASS;
+			intValue = value;
+		}
+	}
+
+	// osc1attack
+	// osc1decay
+	// osc1sustain
+	// osc1release
+	if (name[0] == 'o') {
+		if (name[3] == '1') {
+			intValue = value;
+			if (name[4] == 'a') {
+				type = OSC1_ATTACK;
+			}
+			if (name[4] == 'd') {
+				type = OSC1_DECAY;
+			}
+			if (name[4] == 's') {
+				type = OSC1_SUSTAIN;
+			}
+			if (name[4] == 'r') {
+				type = OSC1_RELEASE;
+			}
+		}
+	}
+
+	synthEvents->addParameterChange(type, intValue);
 }
 
 void SynthGui::buttonSelect(GtkWidget * widget, gpointer data) {
@@ -435,58 +447,72 @@ void SynthGui::buttonSelect(GtkWidget * widget, gpointer data) {
 	}
 	char * name = (char *) data;
 
-	std::cout << "SynthGui::buttonSelect: " << name << "\n";
+	unsigned char type = 255;
+	unsigned short value = 0;
 
-	// LFO
+	// lfo1fixed
+	// lfo1relative
+	// lfo1targetAmplitude
+	// lfo1targetFrequency
+	// lfo1targetNone
+	// lfo1targetPulsewidth
 	if (name[0] == 'l') {
-		if (name[3] == '1') { // LFO 1
-
+		if (name[3] == '1') {
+			if (name[4] == 'f') {
+				type = LFO1_FREQUENCY_TYPE;
+				value = FIXED;
+			}
+			if (name[4] == 'r') {
+				type = LFO1_FREQUENCY_TYPE;
+				value = RELATIVE;
+			}
+			if (name[4] == 't') {
+				type = LFO1_TARGET_TYPE;
+				if (name[10] == 'A') {
+					value = AMPLITUDE;
+				}
+				if (name[10] == 'F') {
+					value = FREQUENCY;
+				}
+				if (name[10] == 'N') {
+					value = NONE;
+				}
+				if (name[10] == 'P') {
+					value = PULSE_WIDTH;
+				}
+			}
 		}
-		else if (name[3] == '2') { // LFO 2
-
-		}
-		return;
 	}
 
-	// Oscillator (sound-producing)
+	// osc1abssine
+	// osc1pulse
+	// osc1sawtooth
+	// osc1sine
+	// osc1triangle
 	if (name[0] == 'o') {
-		if (name[3] == '1') { // LFO 1
-
+		if (name[3] == '1') {
+			type = OSC1_WAVEFORM;
+			if (name[4] == 'a') {
+				value = ABS_SINE;
+			}
+			if (name[4] == 'p') {
+				value = PULSE;
+			}
+			if (name[4] == 's') {
+				if (name[5] == 'a') {
+					value = SAWTOOTH;
+				}
+				if (name[5] == 'i') {
+					value = SINE;
+				}
+			}
+			if (name[4] == 't') {
+				value = TRIANGLE;
+			}
 		}
-		else if (name[3] == '2') { // LFO 2
-
-		}
-		return;
 	}
 
-// TODO
-//	switch (message) {
-//
-//	case '0':
-//		synth_parameter_change(LFO1_FREQUENCY_TYPE, FIXED);
-//		break;
-//
-//	case '1':
-//		synth_parameter_change(LFO1_FREQUENCY_TYPE, RELATIVE);
-//		break;
-//
-//	case '2':
-//		synth_parameter_change(LFO1_TARGET_TYPE, NONE);
-//		break;
-//
-//	case '3':
-//		synth_parameter_change(LFO1_TARGET_TYPE, FREQUENCY);
-//		break;
-//
-//	case '4':
-//		synth_parameter_change(LFO1_TARGET_TYPE, AMPLITUDE);
-//		break;
-//
-//	case '5':
-//		synth_parameter_change(LFO1_TARGET_TYPE, PULSE_WIDTH);
-//		break;
-//
-//	}
+	synthEvents->addParameterChange(type, value);
 }
 
 int SynthGui::keyvalToIndex(guint keyval) {

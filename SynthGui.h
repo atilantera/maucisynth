@@ -45,7 +45,7 @@ private:
 	// Call chain: GTK+ -> guiFocusOutCallback ->
 	//     SynthGui->guiInstance->guiFocusOut
 	static SynthGui * guiInstance;
-	static gboolean guiFocusOutCallback(GtkWidget * widget, gpointer data);
+	static gboolean guiFocusOutCallback();
 	static gboolean onKeyPressCallback(GtkWidget * window, GdkEventKey * pKey,
 			gpointer userdata);
 
@@ -68,7 +68,7 @@ private:
 	pthread_mutex_t keyboardMutex;
 	bool keyIsPressed[NUM_KEYS];
 	int baseOctave;
-	EventBuffer * eventBuffer_;
+	EventBuffer * synthEvents;
 
 	GtkWidget * mainWindow;
 	GtkWidget * mainFixed;
