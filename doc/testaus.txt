@@ -1,0 +1,21 @@
+Testaaminen Valgrindillä:
+1. käännä maucisynth
+2. mene projektin pääkansioon
+3. ./leaktest.sh
+4. vim vgdump
+5. vimissä komento   /by .*maucisynth)   etsii vuotoihin johtaneita
+   funktiokutsuketjuja, jotka ovat lähteneet itse maucisynthin koodista.
+   Seuraava lyhyt ketju kertoo, että maucisynthin main-funktio vuotaa muistia:
+   
+==4456== 144 bytes in 1 blocks are definitely lost in loss record 2,700 of 3,029
+==4456==    at 0x402569A: operator new(unsigned int) (vg_replace_malloc.c:255)
+==4456==    by 0x8049495: main (in /home/alkim/koodit/c++/syna/maucisynth)
+
+pääkansiossa on:
+  leaktest.sh: se käynnistää maucisynthin Valgrindin alaisuudessa.
+  Kun maucisynthin ajo on päättynyt, avaa Vimillä tiedosto vgdump.
+  Etsi
+  
+  maucisynth.sup: suppression-tiedosto Valgrindiä varten.
+  Sen tarkoitus on vähentää Valgrindin ilmoituksia maucisynthin käyttämien
+  kirjastojen (GTK+, GLib, jne.) muistivuodoista.

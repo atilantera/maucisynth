@@ -1,0 +1,34 @@
+Tehtävää aika- ja riippuvuusjärjestyksessä:
+
+1. Seuraavaksi SynthGui::sliderChange ja SynthGui::buttonSelect:
+   käytä EventBuffer.addParameterChange():a. Katso parametrien tyypit ja
+   arvot Synthesizer.h:sta.
+
+2. Synthesizer-luokan alkua?
+   C-version synth.c:n handle_parameter_change():ssa voisi yhden jättimäisen
+   switch-lauseen sijasta tehdä haarukointeja SynthGui::buttonSelectin tapaan.
+
+6. luokka Oscillator
+   * LFO:lle erityinen luokka?
+   * aaltotaulut staattiseksi dataksi
+   * äänengeneroimismetodi
+     * ääni generoidaan parametrina annettuun float-taulukkoon
+     * lfo (itsenäinen)
+     * moduloitu (annetaan parametrina moduloiva float-taulukko,
+       jossa samplet)
+
+7. luokka JackInterface
+   * katso callbackien toteutuksesta mallia SynthGui-luokasta
+   * paitsi että tässä toteutus suoraan staattiseen
+     callbackiin nopeuden vuoksi (siis ei niin, että staattinen
+     callbacki vielä kutsuu oliokohtaista kääremetodia)
+   * analysoi vielä varmuuden vuoksi, että JACKin kutsuketju
+     oikein (JACK tarvitsee dataa -> välitetään viimeksi
+     generoitu -> annetaan syntetisaattorisäikeelle signaali,
+     että voi lähteä generoimaan seuraavaa puskurillista)
+   
+8. luokka Filter
+   
+
+
+

@@ -1,0 +1,27 @@
+Maucisynthin suunnitteluohjeet
+
+GUI
+---
+Ohje: Widgettien luomiseen ja signaalien kytkemiseen on parasta
+käyttää yksinkertaista koodia, josta arvot näkee suoraan, ja
+joka ei sisällä if-lauseita. Jokaisen yksittäisen, näkyvän
+widgetin luova koodirykelmä pitää kommentoida yhdellä rivillä.
+    Perustelu: GTK+:n yksi API-kutsu on monesti pakko hajottaa
+usealle riville, koska funktionimet ovat pitkiä ja lisäksi
+parametreissa on GTK:n omia makroja.
+    Esimerkki: miten pitää tehdä:
+    
+// LFO 1 fixed frequency selector button
+button = gtk_radio_button_new_with_label(NULL, "Fixed\n(Hz)");
+g_signal_connect(button, "clicked",
+	G_CALLBACK(SynthGui::buttonSelectCallback),
+	(gpointer)"lfo1fixed");
+gtk_fixed_put(GTK_FIXED(fixed), button, 0, 19);
+
+// LFO 1 relative frequency selector button
+group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(button));
+button = gtk_radio_button_new_with_label(group, "Relative\nto osc 1");
+g_signal_connect(button, "clicked",
+	G_CALLBACK(SynthGui::buttonSelectCallback),
+	(gpointer)"lfo1relative");
+gtk_fixed_put(GTK_FIXED(fixed), button, 0, 75);    
