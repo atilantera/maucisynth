@@ -1,0 +1,33 @@
+Valgrind-tuloksia
+Huomautus: GTK+-ohjelma tuottaa Valgrindillä AINA mittavan määrän
+varoituksia.
+
+1. Kun main-funktio kutsuu vain gtk_init():iä:
+==2720== LEAK SUMMARY:
+==2720==    definitely lost: 160 bytes in 2 blocks
+==2720==    indirectly lost: 120 bytes in 10 blocks
+==2720==      possibly lost: 114,641 bytes in 1,231 blocks
+==2720==    still reachable: 173,477 bytes in 2,494 blocks
+==2720==         suppressed: 0 bytes in 0 blocks
+
+2. EventBuffer-luokka EI VUODA muistia. Testattu 18.2.2012.
+
+3. 
+==2921== HEAP SUMMARY:
+==2921==     in use at exit: 522,991 bytes in 6,183 blocks
+==2921==   total heap usage: 15,818 allocs, 9,640 frees, 2,090,172 bytes allocated
+==2921== 
+==2921== LEAK SUMMARY:
+==2921==    definitely lost: 1,312 bytes in 6 blocks
+==2921==    indirectly lost: 4,280 bytes in 216 blocks
+==2921==      possibly lost: 277,967 bytes in 2,135 blocks
+==2921==    still reachable: 239,432 bytes in 3,826 blocks
+==2921==         suppressed: 0 bytes in 0 blocks
+==2921== Rerun with --leak-check=full to see details of leaked memory
+==2921== 
+==2921== For counts of detected and suppressed errors, rerun with: -v
+==2921== ERROR SUMMARY: 7 errors from 7 contexts (suppressed: 137 from 12)
+
+
+
+
