@@ -1,0 +1,615 @@
+/*
+ * SynthGui.cpp
+ *
+ *  Created on: 15.2.2012
+ *      Author: alkim
+ */
+
+#include "SynthGui.h"
+
+SynthGui * SynthGui::guiInstance;
+
+SynthGui::SynthGui(EventBuffer * eventBuffer) {
+	keyboardMutex = PTHREAD_MUTEX_INITIALIZER;
+	guiInstance = this;
+	synthEvents = eventBuffer;
+
+	mainWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	g_signal_connect(mainWindow, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+
+	g_signal_connect(mainWindow, "focus_out_event", G_CALLBACK(
+			SynthGui::guiFocusOutCallback), NULL);
+
+	gtk_window_set_title(GTK_WINDOW(mainWindow), "maucisynth");
+	gtk_widget_set_size_request(mainWindow, 1000, 300);
+
+	/* Capture keyboard events */
+	for (int i = 0; i < NUM_KEYS; i++) {
+		keyIsPressed[i] = false;
+	}
+	baseOctave = 4;
+
+	g_signal_connect(mainWindow, "key_press_event", G_CALLBACK(
+			SynthGui::onKeyPressCallback), NULL);
+
+	g_signal_connect(mainWindow, "key_release_event", G_CALLBACK(
+			SynthGui::onKeyReleaseCallback), NULL);
+
+	/* Contents of the main window */
+	mainFixed = gtk_fixed_new();
+	gtk_container_add(GTK_CONTAINER(mainWindow), mainFixed);
+
+	createFilterControls();
+	createLfo1Controls();
+	createOscillator1Controls();
+
+	gtk_widget_show_all(mainWindow);
+}
+
+SynthGui::~SynthGui() {
+}
+
+void SynthGui::createFilterControls() {
+    GtkWidget * frame;
+    GtkWidget * fixed;
+    GtkWidget * label;
+    GtkWidget * vscale;
+    
+    frame = gtk_frame_new(NULL);
+	gtk_fixed_put(GTK_FIXED(mainFixed), frame, 900, 0);
+	gtk_frame_set_label(GTK_FRAME(frame), "Filtering");
+	gtk_widget_set_size_request(GTK_WIDGET(frame), 100, 175);
+
+	fixed = gtk_fixed_new();
+	gtk_container_add(GTK_CONTAINER(frame), fixed);
+
+    label = gtk_label_new("Lowpass");
+	gtk_fixed_put(GTK_FIXED(fixed), label, 5, 0);
+
+	vscale = gtk_vscale_new_with_range(100, 10000, 50);
+	gtk_widget_set_size_request(GTK_WIDGET(vscale), 32, 128);
+	gtk_range_set_inverted(GTK_RANGE(vscale), TRUE);
+	gtk_range_set_update_policy(GTK_RANGE(vscale), GTK_UPDATE_CONTINUOUS);
+	g_signal_connect(vscale, "value_changed",
+		G_CALLBACK(SynthGui::sliderChangeCallback),
+		(gpointer)"lowpassFilterFrequency");
+	gtk_fixed_put(GTK_FIXED(fixed), vscale, 10, 20);
+}
+
+void SynthGui::createLfo1Controls() {
+	GtkWidget * frame;
+	GtkWidget * fixed;
+	GtkWidget * button;
+	GSList * group;
+	GtkWidget * label;
+	GtkWidget * scale;
+
+	// Frame: LFO 1
+	frame = gtk_frame_new(NULL);
+	gtk_fixed_put(GTK_FIXED(mainFixed), frame, 0, 0);
+	gtk_frame_set_label(GTK_FRAME(frame), "LFO 1");
+	gtk_widget_set_size_request(GTK_WIDGET(frame), 488, 175);
+	fixed = gtk_fixed_new();
+	gtk_container_add(GTK_CONTAINER(frame), fixed);
+
+	label = gtk_label_new("Frequency");
+	gtk_fixed_put(GTK_FIXED(fixed), label, 75, 0);
+
+
+	// LFO 1 fixed frequency selector button
+	button = gtk_radio_button_new_with_label(NULL, "Fixed\n(Hz)");
+	g_signal_connect(button, "clicked",
+		G_CALLBACK(SynthGui::buttonSelectCallback),
+		(gpointer)"lfo1fixed");
+	gtk_fixed_put(GTK_FIXED(fixed), button, 0, 19);
+
+	// LFO 1 relative frequency selector button
+	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(button));
+	button = gtk_radio_button_new_with_label(group, "Relative\nto osc 1");
+	g_signal_connect(button, "clicked",
+		G_CALLBACK(SynthGui::buttonSelectCallback),
+		(gpointer)"lfo1relative");
+	gtk_fixed_put(GTK_FIXED(fixed), button, 0, 75);
+
+	// LFO 1 fixed frequency slider
+	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(button));
+	scale = gtk_hscale_new_with_range(0.1, 50, 0.1);
+	gtk_widget_set_size_request(GTK_WIDGET(scale), 128, 38);
+	gtk_range_set_update_policy(GTK_RANGE(scale),
+		GTK_UPDATE_CONTINUOUS);
+	g_signal_connect(scale, "value_changed",
+		G_CALLBACK(SynthGui::sliderChangeCallback),
+		(gpointer)"lfo1fixed");
+	gtk_fixed_put(GTK_FIXED(fixed), scale, 89, 22);
+
+	// LFO 1 relative frequency slider
+	scale = gtk_hscale_new_with_range(0.05, 0.5, 0.05);
+	gtk_widget_set_size_request(GTK_WIDGET(scale), 128, 38);
+	gtk_range_set_update_policy(GTK_RANGE(scale), GTK_UPDATE_CONTINUOUS);
+	g_signal_connect(scale, "value_changed",
+		G_CALLBACK(SynthGui::sliderChangeCallback),
+		(gpointer)"lfo1relative");
+	gtk_fixed_put(GTK_FIXED(fixed), scale, 89, 78);
+
+	// LFO 1 modulation target: radio button group
+	label = gtk_label_new("Target");
+	gtk_fixed_put(GTK_FIXED(fixed), label, 310, 0);
+
+	// LFO 1 modulation target: None
+	button = gtk_radio_button_new_with_label(NULL, "None");
+	g_signal_connect(button, "clicked",
+		G_CALLBACK(SynthGui::buttonSelectCallback),
+		(gpointer)"lfo1targetNone");
+	gtk_fixed_put(GTK_FIXED(fixed), button, 250, 19);
+	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(button));
+
+	// LFO 1 modulation target: frequency
+	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(button));
+	button = gtk_radio_button_new_with_label(group, "Osc 1 frequency");
+	g_signal_connect(button, "clicked",
+		G_CALLBACK(SynthGui::buttonSelectCallback),
+		(gpointer)"lfo1targetFrequency");
+	gtk_fixed_put(GTK_FIXED(fixed), button, 250, 44);
+
+	// LFO 1 modulation target: amplitude
+	button = gtk_radio_button_new_with_label_from_widget(
+		GTK_RADIO_BUTTON(button), "Osc 1 amplitude");
+	g_signal_connect(button, "clicked",
+		G_CALLBACK(SynthGui::buttonSelectCallback),
+		(gpointer)"lfo1targetAmplitude");
+	gtk_fixed_put(GTK_FIXED(fixed), button, 250, 69);
+
+	// LFO 1 modulation target: pulse width
+	button = gtk_radio_button_new_with_label_from_widget(
+		GTK_RADIO_BUTTON(button), "Osc 1 pulse width");
+	g_signal_connect(button, "clicked",
+		G_CALLBACK(SynthGui::buttonSelectCallback),
+		(gpointer)"lfo1targetPulsewidth");
+	gtk_fixed_put(GTK_FIXED(fixed), button, 250, 94);
+
+	// LFO 1 modulation amount
+	label = gtk_label_new("Amount");
+	gtk_fixed_put(GTK_FIXED(fixed), label, 420, 0);
+	scale = gtk_vscale_new_with_range(0.01, 1, 0.01);
+	gtk_widget_set_size_request(GTK_WIDGET(scale), 32, 128);
+	gtk_range_set_inverted(GTK_RANGE(scale), TRUE);
+	gtk_range_set_update_policy(GTK_RANGE(scale), GTK_UPDATE_CONTINUOUS);
+	g_signal_connect(scale, "value_changed",
+		G_CALLBACK(SynthGui::sliderChangeCallback),
+		(gpointer)"lfo1modulationAmount");
+	gtk_fixed_put(GTK_FIXED(fixed), scale, 430, 20);
+}
+
+void SynthGui::createOscillator1Controls() {
+	GtkWidget * frame;
+	GtkWidget * fixed;
+	GSList * group;
+	GtkWidget * label;
+	GtkWidget * button;
+	GtkWidget * triangleButton;
+	GtkWidget * slider;
+
+	/* Frame: Oscillator 1 */
+	frame = gtk_frame_new(NULL);
+	gtk_fixed_put(GTK_FIXED(mainFixed), frame, 500, 0);
+	gtk_frame_set_label(GTK_FRAME(frame), "Oscillator 1");
+	gtk_widget_set_size_request(GTK_WIDGET(frame), 225, 175);
+
+	fixed = gtk_fixed_new();
+	gtk_container_add(GTK_CONTAINER(frame), fixed);
+
+	/* Oscillator 1: waveform type */
+	button = gtk_radio_button_new_with_label(NULL, "Sine");
+	g_signal_connect(button, "clicked",
+		G_CALLBACK(buttonSelectCallback),
+		(gpointer)("osc1sine"));
+	gtk_fixed_put(GTK_FIXED(fixed), button, 0, 0);
+
+	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(button));
+	triangleButton = gtk_radio_button_new_with_label(group, "Triangle");
+	g_signal_connect(triangleButton, "clicked",
+		G_CALLBACK(buttonSelectCallback),
+		(gpointer)("osc1triangle"));
+	gtk_fixed_put(GTK_FIXED(fixed), triangleButton, 0, 25);
+
+	button = gtk_radio_button_new_with_label_from_widget(
+		GTK_RADIO_BUTTON(triangleButton), "Sawtooth");
+	g_signal_connect(button, "clicked",
+		G_CALLBACK(buttonSelectCallback),
+		(gpointer)("osc1sawtooth"));
+	gtk_fixed_put(GTK_FIXED(fixed), button, 0, 50);
+
+	button = gtk_radio_button_new_with_label_from_widget(
+		GTK_RADIO_BUTTON(triangleButton), "Pulse");
+	g_signal_connect(button, "clicked",
+		G_CALLBACK(buttonSelectCallback),
+		(gpointer)("osc1pulse"));
+	gtk_fixed_put(GTK_FIXED(fixed), button, 0, 75);
+
+	button = gtk_radio_button_new_with_label_from_widget(
+		GTK_RADIO_BUTTON(triangleButton), "Abs(Sine)");
+	g_signal_connect(button, "clicked",
+		G_CALLBACK(buttonSelectCallback),
+		(gpointer)("osc1abssine"));
+	gtk_fixed_put(GTK_FIXED(fixed), button, 0, 100);
+
+	/* Oscillator 1 : ADSR.
+	 * Units of A, D and R are millisecods.
+	 * Unit of R is percents of maximum attack amplitude. */
+	label = gtk_label_new("A");
+	gtk_fixed_put(GTK_FIXED(fixed), label, 100, 0);
+	label = gtk_label_new("D");
+	gtk_fixed_put(GTK_FIXED(fixed), label, 132, 0);
+	label = gtk_label_new("S");
+	gtk_fixed_put(GTK_FIXED(fixed), label, 164, 0);
+	label = gtk_label_new("R");
+	gtk_fixed_put(GTK_FIXED(fixed), label, 196, 0);
+
+	slider = gtk_vscale_new_with_range(1, 1000, 5);
+	gtk_widget_set_size_request(GTK_WIDGET(slider), 32, 128);
+	gtk_range_set_inverted(GTK_RANGE(slider), TRUE);
+	gtk_range_set_update_policy(GTK_RANGE(slider), GTK_UPDATE_CONTINUOUS);
+	g_signal_connect(slider, "value_changed",
+		G_CALLBACK(SynthGui::sliderChangeCallback),
+		(gpointer)"osc1attack");
+	gtk_fixed_put(GTK_FIXED(fixed), slider, 90, 20);
+
+	slider = gtk_vscale_new_with_range(1, 1000, 5);
+	gtk_widget_set_size_request(GTK_WIDGET(slider), 32, 128);
+	gtk_range_set_inverted(GTK_RANGE(slider), TRUE);
+	gtk_range_set_update_policy(GTK_RANGE(slider), GTK_UPDATE_CONTINUOUS);
+	g_signal_connect(slider, "value_changed",
+		G_CALLBACK(SynthGui::sliderChangeCallback),
+		(gpointer)"osc1decay");
+	gtk_fixed_put(GTK_FIXED(fixed), slider, 122, 20);
+
+	slider = gtk_vscale_new_with_range(1, 100, 1);
+	gtk_widget_set_size_request(GTK_WIDGET(slider), 32, 128);
+	gtk_range_set_inverted(GTK_RANGE(slider), TRUE);
+	gtk_range_set_value(GTK_RANGE(slider), 100);
+	gtk_range_set_update_policy(GTK_RANGE(slider), GTK_UPDATE_CONTINUOUS);
+	g_signal_connect(slider, "value_changed",
+		G_CALLBACK(SynthGui::sliderChangeCallback),
+		(gpointer)"osc1sustain");
+	gtk_fixed_put(GTK_FIXED(fixed), slider, 154, 20);
+
+	slider = gtk_vscale_new_with_range(1, 3000, 30);
+	gtk_widget_set_size_request(GTK_WIDGET(slider), 32, 128);
+	gtk_range_set_inverted(GTK_RANGE(slider), TRUE);
+	gtk_range_set_update_policy(GTK_RANGE(slider), GTK_UPDATE_CONTINUOUS);
+	g_signal_connect(slider, "value_changed",
+		G_CALLBACK(SynthGui::sliderChangeCallback),
+		(gpointer)"osc1release");
+	gtk_fixed_put(GTK_FIXED(fixed), slider, 186, 20);
+}
+
+gboolean SynthGui::guiFocusOutCallback() {
+	SynthGui::guiInstance->guiFocusOut();
+	return FALSE;
+}
+
+gboolean SynthGui::onKeyPressCallback(GtkWidget * window, GdkEventKey * pKey,
+		gpointer userdata) {
+	SynthGui::guiInstance->onKeyPress(pKey);
+	return FALSE;
+}
+
+gboolean SynthGui::onKeyReleaseCallback(GtkWidget * window, GdkEventKey * pKey,
+		gpointer userdata) {
+	SynthGui::guiInstance->onKeyRelease(pKey);
+	return FALSE;
+}
+
+gboolean SynthGui::sliderChangeCallback(GtkAdjustment * adj, gpointer data) {
+	SynthGui::guiInstance->sliderChange(adj, data);
+	return FALSE;
+}
+
+gboolean SynthGui::buttonSelectCallback(GtkWidget * widget, gpointer data) {
+	SynthGui::guiInstance->buttonSelect(widget, data);
+	return FALSE;
+}
+
+void SynthGui::guiFocusOut() {
+	int i;
+	pthread_mutex_lock(&keyboardMutex);
+	for (i = 0; i < NUM_KEYS; i++) {
+		keyIsPressed[i] = false;
+	}
+	pthread_mutex_unlock(&keyboardMutex);
+	synthEvents->addAllNotesOff(computerKeyboard);
+}
+
+void SynthGui::onKeyPress(GdkEventKey * pKey) {
+	int i, key, midiKey;
+	if (pKey->type != GDK_KEY_PRESS) {
+		return;
+	}
+
+	key = keyvalToIndex(pKey->keyval);
+	if (key == NOT_INTERESTING_KEY) {
+		return;
+	}
+
+	pthread_mutex_lock(&keyboardMutex);
+	if (keyIsPressed[key] == TRUE) {
+		pthread_mutex_unlock(&keyboardMutex);
+		return;
+	}
+
+	if (key == OCTAVE_UP && baseOctave < BASE_OCTAVE_MAX) {
+		for (i = 0; i < NUM_PIANO_KEYS; i++) {
+			if (keyIsPressed[i] == true) {
+				keyIsPressed[i] = false;
+				midiKey = baseOctave * 12 + i;
+				synthEvents->addNoteOff(midiKey, computerKeyboard);
+			}
+		}
+		baseOctave++;
+	}
+	if (key == OCTAVE_DOWN && baseOctave > BASE_OCTAVE_MIN) {
+		for (i = 0; i < NUM_PIANO_KEYS; i++) {
+			if (keyIsPressed[i] == true) {
+				keyIsPressed[i] = false;
+				midiKey = baseOctave * 12 + i;
+				synthEvents->addNoteOff(midiKey, computerKeyboard);
+			}
+		}
+		baseOctave--;
+	}
+	if (key < NUM_PIANO_KEYS) {
+		midiKey = baseOctave * 12 + key;
+		synthEvents->addNoteOn(midiKey, 100, computerKeyboard);
+	}
+	keyIsPressed[key] = true;
+	pthread_mutex_unlock(&keyboardMutex);
+}
+
+void SynthGui::onKeyRelease(GdkEventKey * pKey) {
+	int key, midiKey;
+	if (pKey->type != GDK_KEY_RELEASE) {
+		return;
+	}
+
+	key = keyvalToIndex(pKey->keyval);
+	if (key == NOT_INTERESTING_KEY) {
+		return;
+	}
+
+	pthread_mutex_lock(&keyboardMutex);
+	if (key < 25) {
+		midiKey = baseOctave * 12 + key;
+		synthEvents->addNoteOff(midiKey, computerKeyboard);
+	}
+	keyIsPressed[key] = FALSE;
+	pthread_mutex_unlock(&keyboardMutex);
+}
+
+void SynthGui::sliderChange(GtkAdjustment * adj, gpointer data) {
+	float value = ((GtkRange *) adj)->adjustment->value;
+	char * name = (char *)data;
+
+	unsigned char type = 255;
+	unsigned short intValue = 0;
+
+	// lfo1fixed
+	// lfo1relative
+	// lfo1modulationAmount
+	// lowpassFilterFrequency
+	if (name[0] == 'l') {
+		if (name[3] == '1') {
+			intValue = value * 100;
+			if (name[4] == 'f') {
+				type = LFO1_FIXED_FREQUENCY;
+			}
+			if (name[4] == 'r') {
+				type = LFO1_RELATIVE_FREQUENCY;
+			}
+			if (name[4] == 'm') {
+				type = LFO1_MODULATION_AMOUNT;
+			}
+		}
+		if (name[1] == 'o') {
+			type = FILTER_LOWPASS;
+			intValue = value;
+		}
+	}
+
+	// osc1attack
+	// osc1decay
+	// osc1sustain
+	// osc1release
+	if (name[0] == 'o') {
+		if (name[3] == '1') {
+			intValue = value;
+			if (name[4] == 'a') {
+				type = OSC1_ATTACK;
+			}
+			if (name[4] == 'd') {
+				type = OSC1_DECAY;
+			}
+			if (name[4] == 's') {
+				type = OSC1_SUSTAIN;
+			}
+			if (name[4] == 'r') {
+				type = OSC1_RELEASE;
+			}
+		}
+	}
+
+	synthEvents->addParameterChange(type, intValue);
+}
+
+void SynthGui::buttonSelect(GtkWidget * widget, gpointer data) {
+
+	if (!gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget))) {
+		return;
+	}
+	char * name = (char *) data;
+
+	unsigned char type = 255;
+	unsigned short value = 0;
+
+	// lfo1fixed
+	// lfo1relative
+	// lfo1targetAmplitude
+	// lfo1targetFrequency
+	// lfo1targetNone
+	// lfo1targetPulsewidth
+	if (name[0] == 'l') {
+		if (name[3] == '1') {
+			if (name[4] == 'f') {
+				type = LFO1_FREQUENCY_TYPE;
+				value = FIXED;
+			}
+			if (name[4] == 'r') {
+				type = LFO1_FREQUENCY_TYPE;
+				value = RELATIVE;
+			}
+			if (name[4] == 't') {
+				type = LFO1_TARGET_TYPE;
+				if (name[10] == 'A') {
+					value = AMPLITUDE;
+				}
+				if (name[10] == 'F') {
+					value = FREQUENCY;
+				}
+				if (name[10] == 'N') {
+					value = NONE;
+				}
+				if (name[10] == 'P') {
+					value = PULSE_WIDTH;
+				}
+			}
+		}
+	}
+
+	// osc1abssine
+	// osc1pulse
+	// osc1sawtooth
+	// osc1sine
+	// osc1triangle
+	if (name[0] == 'o') {
+		if (name[3] == '1') {
+			type = OSC1_WAVEFORM;
+			if (name[4] == 'a') {
+				value = ABS_SINE;
+			}
+			if (name[4] == 'p') {
+				value = PULSE;
+			}
+			if (name[4] == 's') {
+				if (name[5] == 'a') {
+					value = SAWTOOTH;
+				}
+				if (name[5] == 'i') {
+					value = SINE;
+				}
+			}
+			if (name[4] == 't') {
+				value = TRIANGLE;
+			}
+		}
+	}
+
+	synthEvents->addParameterChange(type, value);
+}
+
+int SynthGui::keyvalToIndex(guint keyval) {
+	/* Most of the key values are ASCII values */
+
+	if (keyval < 43 || keyval > 122)
+		return NOT_INTERESTING_KEY;
+
+	/* Two piano octaves on computer keyboard:
+	 * keys 0 .. 12  = Z S X D C V G B H N J M ,
+	 * keys 12 .. 24 = Q 2 W 3 E R 5 T 6 Y 7 U I
+	 * key + = octave up
+	 * key - = octave down
+	 */
+
+	if (keyval > '1' && keyval < '8') {
+		switch (keyval) {
+		case '2':
+			return 13;
+		case '3':
+			return 15;
+		case '5':
+			return 18;
+		case '6':
+			return 20;
+		case '7':
+			return 22;
+		default:
+			return NOT_INTERESTING_KEY;
+		}
+	}
+
+	if (keyval > 'a' && keyval <= 'z') {
+		keyval -= 32; /* convert to uppercase */
+	}
+
+	if (keyval > 'A' && keyval <= 'Z') {
+		if (keyval < 'P') {
+			switch (keyval) {
+			case 'B':
+				return 7;
+			case 'C':
+				return 4;
+			case 'D':
+				return 3;
+			case 'E':
+				return 16;
+			case 'G':
+				return 6;
+			case 'H':
+				return 8;
+			case 'I':
+				return 24;
+			case 'J':
+				return 10;
+			case 'M':
+				return 11;
+			case 'N':
+				return 9;
+				return NOT_INTERESTING_KEY;
+			}
+		} else {
+			switch (keyval) {
+			case 'Q':
+				return 12;
+			case 'R':
+				return 17;
+			case 'S':
+				return 1;
+			case 'T':
+				return 19;
+			case 'U':
+				return 23;
+			case 'Y':
+				return 21;
+			case 'W':
+				return 14;
+			case 'V':
+				return 5;
+			case 'X':
+				return 2;
+			case 'Z':
+				return 0;
+				return NOT_INTERESTING_KEY;
+			}
+		}
+	}
+
+	switch (keyval) {
+	case ',':
+	case ';':
+		return 12;
+	case '-':
+		return OCTAVE_DOWN;
+	case '+':
+		return OCTAVE_UP;
+	}
+
+	return NOT_INTERESTING_KEY;
+}
