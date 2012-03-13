@@ -62,6 +62,8 @@ private:
 	void sliderChange(GtkAdjustment * adj, gpointer data);
 	void waveformSelect(GtkWidget * widget, gpointer data);
 	void buttonSelect(GtkWidget * widget, gpointer data);
+
+	void generateKeyTranslations();
 	int keyvalToIndex(guint keyval);
 
 	// Member data
@@ -72,6 +74,8 @@ private:
 
 	GtkWidget * mainWindow;
 	GtkWidget * mainFixed;
+
+	int keyTranslations[128];
 
 };
 

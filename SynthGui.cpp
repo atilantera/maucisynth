@@ -10,9 +10,12 @@
 SynthGui * SynthGui::guiInstance;
 
 SynthGui::SynthGui(EventBuffer * eventBuffer) {
+
 	keyboardMutex = PTHREAD_MUTEX_INITIALIZER;
 	guiInstance = this;
 	synthEvents = eventBuffer;
+
+	generateKeyTranslations();
 
 	mainWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	g_signal_connect(mainWindow, "destroy", G_CALLBACK(gtk_main_quit), NULL);
@@ -515,101 +518,75 @@ void SynthGui::buttonSelect(GtkWidget * widget, gpointer data) {
 	synthEvents->addParameterChange(type, value);
 }
 
+// Generates SynthGui.keyTranslations[] for method keyvalToIndex()
+void SynthGui::generateKeyTranslations()
+{
+	int i;
+	for (i = 0; i < 128; i++) {
+		keyTranslations[i] = NOT_INTERESTING_KEY;
+	}
+
+	keyTranslations['Z'] = 0;
+	keyTranslations['S'] = 1;
+	keyTranslations['X'] = 2;
+	keyTranslations['D'] = 3;
+	keyTranslations['C'] = 4;
+	keyTranslations['V'] = 5;
+	keyTranslations['G'] = 6;
+	keyTranslations['B'] = 7;
+	keyTranslations['H'] = 8;
+	keyTranslations['N'] = 9;
+	keyTranslations['J'] = 10;
+	keyTranslations['M'] = 11;
+	keyTranslations[','] = 12;
+
+	keyTranslations['Q'] = 12;
+	keyTranslations['2'] = 13;
+	keyTranslations['W'] = 14;
+	keyTranslations['3'] = 15;
+	keyTranslations['E'] = 16;
+	keyTranslations['R'] = 17;
+	keyTranslations['5'] = 18;
+	keyTranslations['T'] = 19;
+	keyTranslations['6'] = 20;
+	keyTranslations['Y'] = 21;
+	keyTranslations['7'] = 22;
+	keyTranslations['U'] = 23;
+	keyTranslations['I'] = 24;
+
+	keyTranslations['z'] = 0;
+	keyTranslations['s'] = 1;
+	keyTranslations['x'] = 2;
+	keyTranslations['d'] = 3;
+	keyTranslations['c'] = 4;
+	keyTranslations['v'] = 5;
+	keyTranslations['g'] = 6;
+	keyTranslations['b'] = 7;
+	keyTranslations['h'] = 8;
+	keyTranslations['n'] = 9;
+	keyTranslations['j'] = 10;
+	keyTranslations['m'] = 11;
+	keyTranslations[','] = 12;
+
+	keyTranslations['q'] = 12;
+	keyTranslations['w'] = 14;
+	keyTranslations['e'] = 16;
+	keyTranslations['r'] = 17;
+	keyTranslations['t'] = 19;
+	keyTranslations['y'] = 21;
+	keyTranslations['u'] = 23;
+	keyTranslations['i'] = 24;
+
+	keyTranslations['-'] = OCTAVE_DOWN;
+	keyTranslations['+'] = OCTAVE_UP;
+}
+
+// Translates computer keyboard key value to relative note key value
 int SynthGui::keyvalToIndex(guint keyval) {
 	/* Most of the key values are ASCII values */
 
-	if (keyval < 43 || keyval > 122)
+	if (keyval > 127)
 		return NOT_INTERESTING_KEY;
 
-	/* Two piano octaves on computer keyboard:
-	 * keys 0 .. 12  = Z S X D C V G B H N J M ,
-	 * keys 12 .. 24 = Q 2 W 3 E R 5 T 6 Y 7 U I
-	 * key + = octave up
-	 * key - = octave down
-	 */
-
-	if (keyval > '1' && keyval < '8') {
-		switch (keyval) {
-		case '2':
-			return 13;
-		case '3':
-			return 15;
-		case '5':
-			return 18;
-		case '6':
-			return 20;
-		case '7':
-			return 22;
-		default:
-			return NOT_INTERESTING_KEY;
-		}
-	}
-
-	if (keyval > 'a' && keyval <= 'z') {
-		keyval -= 32; /* convert to uppercase */
-	}
-
-	if (keyval > 'A' && keyval <= 'Z') {
-		if (keyval < 'P') {
-			switch (keyval) {
-			case 'B':
-				return 7;
-			case 'C':
-				return 4;
-			case 'D':
-				return 3;
-			case 'E':
-				return 16;
-			case 'G':
-				return 6;
-			case 'H':
-				return 8;
-			case 'I':
-				return 24;
-			case 'J':
-				return 10;
-			case 'M':
-				return 11;
-			case 'N':
-				return 9;
-				return NOT_INTERESTING_KEY;
-			}
-		} else {
-			switch (keyval) {
-			case 'Q':
-				return 12;
-			case 'R':
-				return 17;
-			case 'S':
-				return 1;
-			case 'T':
-				return 19;
-			case 'U':
-				return 23;
-			case 'Y':
-				return 21;
-			case 'W':
-				return 14;
-			case 'V':
-				return 5;
-			case 'X':
-				return 2;
-			case 'Z':
-				return 0;
-				return NOT_INTERESTING_KEY;
-			}
-		}
-	}
-
-	switch (keyval) {
-	case ',':
-	case ';':
-		return 12;
-	case '-':
-		return OCTAVE_DOWN;
-	case '+':
-		return OCTAVE_UP;
-	}
-
-	return NOT_INTERESTING_KEY;
+	return keyTranslations[keyval];
 }

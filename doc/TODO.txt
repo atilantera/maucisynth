@@ -1,5 +1,7 @@
 Tehtävää aika- ja riippuvuusjärjestyksessä:
 
+SynthGui::keyvalToIndex: pitkän switch-rimpsun sijasta
+   näppäinarvot a-z ja 0-9 voisi taulukoida.
 
 2. Synthesizer-luokan alkua?
    C-version synth.c:n handle_parameter_change():ssa voisi yhden jättimäisen
