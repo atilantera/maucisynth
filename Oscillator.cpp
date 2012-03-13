@@ -94,7 +94,7 @@ void Oscillator::generateBaseFrequencies()
 		octaveCoefficent *= 0.5;
 	}
 
-	/* notes 81 .. 116 */
+	// notes 81 .. 116
 	octaveCoefficent = 2;
 	for (j = 1; j < 4; j++) {
 		for (i = 0; i < 12; i++) {
@@ -104,13 +104,13 @@ void Oscillator::generateBaseFrequencies()
 		octaveCoefficent *= 2;
 	}
 
-	/* notes 117 .. 127 */
+	// notes 117 .. 127
 	octaveCoefficent = 16;
 	for (i = 0; i < 11; i++) {
 		baseFrequency[117 + i] = baseFrequency[69 + i] * octaveCoefficent;
 	}
 
-	/* notes 0..8 */
+	// notes 0..8
 	octaveCoefficent = (float)1/32;
 	for (i = 0; i < 12; i++) {
 		baseFrequency[i] = baseFrequency[60 + i] * octaveCoefficent;

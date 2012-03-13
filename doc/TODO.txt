@@ -1,20 +1,24 @@
 Tehtävää aika- ja riippuvuusjärjestyksessä:
 
-SynthGui::keyvalToIndex: pitkän switch-rimpsun sijasta
-   näppäinarvot a-z ja 0-9 voisi taulukoida.
-
-2. Synthesizer-luokan alkua?
-   C-version synth.c:n handle_parameter_change():ssa voisi yhden jättimäisen
-   switch-lauseen sijasta tehdä haarukointeja SynthGui::buttonSelectin tapaan.
-
-6. luokka Oscillator
+1. luokka Oscillator
    * LFO:lle erityinen luokka?
+      * kentät lfo_angle .. lfo_modulation_amount
+      * metodi generateSound (generate_lfo c-versiossa)
+   * Jokaiselle Oscillator- ja Lfo-oliolle ei erillistä
+     äänipuskuria!
+       
    * aaltotaulut staattiseksi dataksi
    * äänengeneroimismetodi
      * ääni generoidaan parametrina annettuun float-taulukkoon
      * lfo (itsenäinen)
      * moduloitu (annetaan parametrina moduloiva float-taulukko,
        jossa samplet)
+
+
+2. Synthesizer-luokan alkua?
+   C-version synth.c:n handle_parameter_change():ssa voisi yhden jättimäisen
+   switch-lauseen sijasta tehdä haarukointeja SynthGui::buttonSelectin tapaan.
+
 
 7. luokka JackInterface
    * katso callbackien toteutuksesta mallia SynthGui-luokasta

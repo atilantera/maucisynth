@@ -59,6 +59,11 @@ protected:
 	// linear transition from last sample value to zero.
 	float lastSample;
 
+	float frequency;           // osc_frequency
+	float pulseWidth;          // osc_pulse_width
+	float angle;               // osc_angle
+	float radiansPerSample;    // osc_radians_per_sample
+
 	// Precalculated waveform tables
 	static float sineTable[WAVE_TABLE_LENGTH];
 	static float triangleTable[WAVE_TABLE_LENGTH];
