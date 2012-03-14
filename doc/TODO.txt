@@ -1,11 +1,22 @@
 Tehtävää aika- ja riippuvuusjärjestyksessä:
 
-1. luokka Oscillator
+1. luokat Oscillator, MainOscillator, LfoOscillator
+   * LFO:lle ja suoraan ääntä tuottavalle oskillaattorille on yhteistä
+     siniaaltotaulu ja sinimuotoisen värähtelyn tuottaminen.
+     Nämä asiat on parasta kerätä yhteiseen kantaluokkaan.
+
    * LFO:lle erityinen luokka?
       * kentät lfo_angle .. lfo_modulation_amount
       * metodi generateSound (generate_lfo c-versiossa)
    * Jokaiselle Oscillator- ja Lfo-oliolle ei erillistä
      äänipuskuria!
+     
+   
+
+   Huom! Jos LFO on vakiotaajuuksinen, niin yksi LFO-signaali kaikille
+   soiville oskillaattoreille riittää. Tämän takia LFO:ita ei saa kytkeä
+   liian alisteisiksi soiville oskillaattoreille.
+
        
    * aaltotaulut staattiseksi dataksi
    * äänengeneroimismetodi
@@ -19,6 +30,9 @@ Tehtävää aika- ja riippuvuusjärjestyksessä:
    C-version synth.c:n handle_parameter_change():ssa voisi yhden jättimäisen
    switch-lauseen sijasta tehdä haarukointeja SynthGui::buttonSelectin tapaan.
 
+   Huom! Tallenna vapaat oskillaattorit jonona. Käytännön toteutus voi
+   olla taulukko tai STL:n jono. On tehottomampaa käydä läpi kaikki
+   oskillaattorit etsien ensimmäistä vapaata aina, kun tulee uusi nuotti.
 
 7. luokka JackInterface
    * katso callbackien toteutuksesta mallia SynthGui-luokasta

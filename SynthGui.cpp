@@ -9,11 +9,11 @@
 
 SynthGui * SynthGui::guiInstance;
 
-SynthGui::SynthGui(EventBuffer * eventBuffer) {
+SynthGui::SynthGui(EventBuffer & eventBuffer) :
+	synthEvents(eventBuffer) {
 
 	keyboardMutex = PTHREAD_MUTEX_INITIALIZER;
 	guiInstance = this;
-	synthEvents = eventBuffer;
 
 	generateKeyTranslations();
 
@@ -320,7 +320,7 @@ void SynthGui::guiFocusOut() {
 		keyIsPressed[i] = false;
 	}
 	pthread_mutex_unlock(&keyboardMutex);
-	synthEvents->addAllNotesOff(computerKeyboard);
+	synthEvents.addAllNotesOff(computerKeyboard);
 }
 
 void SynthGui::onKeyPress(GdkEventKey * pKey) {
@@ -345,7 +345,7 @@ void SynthGui::onKeyPress(GdkEventKey * pKey) {
 			if (keyIsPressed[i] == true) {
 				keyIsPressed[i] = false;
 				midiKey = baseOctave * 12 + i;
-				synthEvents->addNoteOff(midiKey, computerKeyboard);
+				synthEvents.addNoteOff(midiKey, computerKeyboard);
 			}
 		}
 		baseOctave++;
@@ -355,14 +355,14 @@ void SynthGui::onKeyPress(GdkEventKey * pKey) {
 			if (keyIsPressed[i] == true) {
 				keyIsPressed[i] = false;
 				midiKey = baseOctave * 12 + i;
-				synthEvents->addNoteOff(midiKey, computerKeyboard);
+				synthEvents.addNoteOff(midiKey, computerKeyboard);
 			}
 		}
 		baseOctave--;
 	}
 	if (key < NUM_PIANO_KEYS) {
 		midiKey = baseOctave * 12 + key;
-		synthEvents->addNoteOn(midiKey, 100, computerKeyboard);
+		synthEvents.addNoteOn(midiKey, 100, computerKeyboard);
 	}
 	keyIsPressed[key] = true;
 	pthread_mutex_unlock(&keyboardMutex);
@@ -382,7 +382,7 @@ void SynthGui::onKeyRelease(GdkEventKey * pKey) {
 	pthread_mutex_lock(&keyboardMutex);
 	if (key < 25) {
 		midiKey = baseOctave * 12 + key;
-		synthEvents->addNoteOff(midiKey, computerKeyboard);
+		synthEvents.addNoteOff(midiKey, computerKeyboard);
 	}
 	keyIsPressed[key] = FALSE;
 	pthread_mutex_unlock(&keyboardMutex);
@@ -440,7 +440,7 @@ void SynthGui::sliderChange(GtkAdjustment * adj, gpointer data) {
 		}
 	}
 
-	synthEvents->addParameterChange(type, intValue);
+	synthEvents.addParameterChange(type, intValue);
 }
 
 void SynthGui::buttonSelect(GtkWidget * widget, gpointer data) {
@@ -515,7 +515,7 @@ void SynthGui::buttonSelect(GtkWidget * widget, gpointer data) {
 		}
 	}
 
-	synthEvents->addParameterChange(type, value);
+	synthEvents.addParameterChange(type, value);
 }
 
 // Generates SynthGui.keyTranslations[] for method keyvalToIndex()
@@ -583,7 +583,7 @@ void SynthGui::generateKeyTranslations()
 
 // Translates computer keyboard key value to relative note key value
 int SynthGui::keyvalToIndex(guint keyval) {
-	/* Most of the key values are ASCII values */
+	// Most of the key values are ASCII values
 
 	if (keyval > 127)
 		return NOT_INTERESTING_KEY;

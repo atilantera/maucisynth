@@ -12,7 +12,7 @@ float Oscillator::triangleTable[WAVE_TABLE_LENGTH];
 float Oscillator::absSineTable[WAVE_TABLE_LENGTH];
 float Oscillator::baseFrequency[128];
 bool Oscillator::staticDataInitialized = false;
-float Oscillator::randomDetune = 0.000001;
+float Oscillator::randomDetune = 0.001 / 1024;
 
 Oscillator::Oscillator() {
 	if (!staticDataInitialized) {

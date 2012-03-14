@@ -6,9 +6,11 @@ RM=rm -f
 
 all: main
 
-main: EventBuffer.o main.o Oscillator.o Synthesizer.o SynthGui.o
-	$(LD) $(LIBS) EventBuffer.o main.o Oscillator.o Synthesizer.o \
-	SynthGui.o -o maucisynth
+main: EventBuffer.o main.o LowFrequencyOscillator.o MainOscillator.o \
+	Oscillator.o SoundBuffer.o Synthesizer.o SynthGui.o
+	$(LD) $(LIBS) EventBuffer.o main.o LowFrequencyOscillator.o \
+	MainOscillator.o Oscillator.o SoundBuffer.o Synthesizer.o SynthGui.o \
+	-o maucisynth
 
 EventBuffer.o: EventBuffer.cpp EventBuffer.h
 	$(CC) $(CFLAGS) -o EventBuffer.o -c EventBuffer.cpp
@@ -16,8 +18,17 @@ EventBuffer.o: EventBuffer.cpp EventBuffer.h
 main.o: main.cpp
 	$(CC) $(CFLAGS) -o main.o -c main.cpp
 
+LowFrequencyOscillator.o: LowFrequencyOscillator.cpp LowFrequencyOscillator.h
+	$(CC) $(CFLAGS) -o LowFrequencyOscillator.o -c LowFrequencyOscillator.cpp
+
+MainOscillator.o: MainOscillator.cpp MainOscillator.h
+	$(CC) $(CFLAGS) -o MainOscillator.o -c MainOscillator.cpp
+
 Oscillator.o: Oscillator.cpp Oscillator.h
 	$(CC) $(CFLAGS) -o Oscillator.o -c Oscillator.cpp
+
+SoundBuffer.o: SoundBuffer.cpp SoundBuffer.h
+	$(CC) $(CFLAGS) -o SoundBuffer.o -c SoundBuffer.cpp
 
 Synthesizer.o: Synthesizer.cpp Synthesizer.h
 	$(CC) $(CFLAGS) -o Synthesizer.o -c Synthesizer.cpp

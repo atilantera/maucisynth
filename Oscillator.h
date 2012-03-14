@@ -9,6 +9,7 @@
 #define OSCILLATOR_H_
 
 #include <math.h>
+#include "SoundBuffer.h"
 
 // Length of wave tables in samples. 44100 samples could store sine wave
 // at 1.0 Hz when the samplerate is 44.1 kHz.
@@ -21,42 +22,15 @@ public:
 	Oscillator();
 	virtual ~Oscillator();
 
+	void generateSound();
 
 protected:
 	void generateWaveTables();
 	void generateBaseFrequencies();
 
-	// variable                   variable in synth.c
-	int waveform;              // osc_waveform
-	int envelopePhase;         // osc_envelope_phase
-	int previousEnvelopePhase; // osc_precious_envelope_phase
-	float envelopeAmplitude;   // osc_envelope_amplitude
-	bool isProducingSound;     // osc_mute
-
-	// ADSR parameters. Time in samples. Sustain volume is 0..1 times
-	// peak amplitude (between attack and decay).
-	// variable                   variable in synth.c
-	int attack;                // osc_attack_time
-	int decay;                 // osc_decay_time
-	float sustain;             // osc_sustain_volume
-	int release;               // osc_release_time
-
-	// Which keyboard key this oscillator is currently playing
-	// variable                   variable in synth.c
-	unsigned char key;         // osc_key
-	int keySource;             // osc_key_source
-
-	// Peak amplitude of the oscillator. MIDI note velocity determines
-	// this. It is coefficent between 0..1.
-	float peakAmplitude;        // osc_max_amplitude
-
-	// Playing time of current envelope phase (in samples)
-	int phaseTime;             // osc_time
-
-	// Value of the last sample played. When the synthesizer gets an
-	// "All notes off" message, it means that all oscillators must be muted
-	// suddenly. To prevent a crack or pop, all oscillators produce quick
-	// linear transition from last sample value to zero.
+	// Value of the last sample played.
+	// If the note of the oscillator ends in Attack or Decay phases,
+	// the current peak amplitude is not sustain * peakAmplitude.
 	float lastSample;
 
 	float frequency;           // osc_frequency
@@ -73,11 +47,13 @@ protected:
 	static float baseFrequency[128];
 
 	static bool staticDataInitialized;
+
+	// In acoustic and analogue electronic instruments, two adjacent notes with
+	// the same nominal key frequency do not have the exact playing frequency.
+	// This is just random variance brought by nature. Here field randomDetune
+	// simulates this: if randomDetune = 0.001, the note played by an oscillator
+	// is the nominal frequency +-0.1% (which is quite much).
 	static float randomDetune;
-
-
-
-
 };
 
 #endif /* OSCILLATOR_H_ */
