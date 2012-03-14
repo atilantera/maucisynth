@@ -9,11 +9,19 @@
 #define LOWFREQUENCYOSCILLATOR_H_
 
 #include "Oscillator.h"
+#include "SynthParameters.h"
 
 class LowFrequencyOscillator : public Oscillator{
 public:
 	LowFrequencyOscillator();
 	virtual ~LowFrequencyOscillator();
+
+	void setModulationTarget(lfoModulationTarget target);
+	void generateSound(float * buffer, int bufferLength);
+
+private:
+	lfoModulationTarget modulationTarget;
+
 };
 
 #endif /* LOWFREQUENCYOSCILLATOR_H_ */

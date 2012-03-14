@@ -7,9 +7,9 @@ RM=rm -f
 all: main
 
 main: EventBuffer.o main.o LowFrequencyOscillator.o MainOscillator.o \
-	Oscillator.o SoundBuffer.o Synthesizer.o SynthGui.o
+	Oscillator.o Synthesizer.o SynthGui.o
 	$(LD) $(LIBS) EventBuffer.o main.o LowFrequencyOscillator.o \
-	MainOscillator.o Oscillator.o SoundBuffer.o Synthesizer.o SynthGui.o \
+	MainOscillator.o Oscillator.o Synthesizer.o SynthGui.o \
 	-o maucisynth
 
 EventBuffer.o: EventBuffer.cpp EventBuffer.h
@@ -27,10 +27,7 @@ MainOscillator.o: MainOscillator.cpp MainOscillator.h
 Oscillator.o: Oscillator.cpp Oscillator.h
 	$(CC) $(CFLAGS) -o Oscillator.o -c Oscillator.cpp
 
-SoundBuffer.o: SoundBuffer.cpp SoundBuffer.h
-	$(CC) $(CFLAGS) -o SoundBuffer.o -c SoundBuffer.cpp
-
-Synthesizer.o: Synthesizer.cpp Synthesizer.h
+Synthesizer.o: Synthesizer.cpp Synthesizer.h SynthParameters.h
 	$(CC) $(CFLAGS) -o Synthesizer.o -c Synthesizer.cpp
 
 SynthGui.o: SynthGui.cpp SynthGui.h

@@ -12,11 +12,14 @@
 #define MAINOSCILLATOR_H_
 
 #include "Oscillator.h"
+#include "SynthParameters.h"
 
 class MainOscillator : public Oscillator {
 public:
 	MainOscillator();
 	virtual ~MainOscillator();
+
+	void generateSound(float * buffer, int bufferLength);
 
 private:
 	// variable                   variable in synth.c

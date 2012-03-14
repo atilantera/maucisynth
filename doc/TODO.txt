@@ -1,30 +1,31 @@
 Tehtävää aika- ja riippuvuusjärjestyksessä:
 
-1. luokat Oscillator, MainOscillator, LfoOscillator
-   * LFO:lle ja suoraan ääntä tuottavalle oskillaattorille on yhteistä
-     siniaaltotaulu ja sinimuotoisen värähtelyn tuottaminen.
-     Nämä asiat on parasta kerätä yhteiseen kantaluokkaan.
-
-   * LFO:lle erityinen luokka?
-      * kentät lfo_angle .. lfo_modulation_amount
-      * metodi generateSound (generate_lfo c-versiossa)
-   * Jokaiselle Oscillator- ja Lfo-oliolle ei erillistä
-     äänipuskuria!
-     
+1. Luokka MainOscillator: äänen generointi (mahdollisesti LFO:lla moduloiden),
+   verhokäyrä.
    
+   Kun LFO moduloi, niin Synthesizer kuitenkin aina kutsuu
+   LowFrequencyOscillator.generateSound():ia.
+   LFO piirtää sille annettuun aaltotaulukkoon signaalinsa, ja sitten
+   aaltotaulukko annetaan edelleen osoitinparametrina
+   MainOscillator.generateSound():ille.
+   
+   Siis: jokaiselle Oscillator- ja Lfo-oliolle ei erillistä
+   äänipuskuria! Kolme äänisynteesipuskuria Synthesizerissä riittää:
+   1. LFO:n ääni. Jos LFO:n taajuus on kiinteä, niin LFO:n ääni on kaikille
+      MainOscillatoreille sama. Silloin LFO tarvitsee laskea vain kerran.
+   2. MainOscillatorin ääni.
+   3. Miksaus. Jokainen soiva MainOscillator generoidaan vuorollaan ja
+      summataan miksauspuskuriin.   
 
-   Huom! Jos LFO on vakiotaajuuksinen, niin yksi LFO-signaali kaikille
-   soiville oskillaattoreille riittää. Tämän takia LFO:ita ei saa kytkeä
-   liian alisteisiksi soiville oskillaattoreille.
+   Kun LFO:n taajuus riippuu pääoskillaattorin taajuudesta, niin
+   pääoskillaattorin pärähtäessä soimaan se asettaa LFO:n taajuuden.
+   (Pääoskillaattorissa on viittaus sille varattuun LFO:hon.)
 
-       
-   * aaltotaulut staattiseksi dataksi
    * äänengeneroimismetodi
      * ääni generoidaan parametrina annettuun float-taulukkoon
      * lfo (itsenäinen)
      * moduloitu (annetaan parametrina moduloiva float-taulukko,
        jossa samplet)
-
 
 2. Synthesizer-luokan alkua?
    C-version synth.c:n handle_parameter_change():ssa voisi yhden jättimäisen

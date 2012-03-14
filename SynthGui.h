@@ -18,7 +18,7 @@
 #include <gtk-2.0/gdk/gdkkeysyms.h>
 #include <gtk-2.0/gtk/gtk.h>
 #include "EventBuffer.h"
-#include "Synthesizer.h"
+#include "SynthParameters.h"
 
 const int NUM_KEYS = 28;
 const int NUM_PIANO_KEYS = 25;

@@ -9,7 +9,8 @@
 #define OSCILLATOR_H_
 
 #include <math.h>
-#include "SoundBuffer.h"
+#include <stdlib.h>
+#include <time.h>
 
 // Length of wave tables in samples. 44100 samples could store sine wave
 // at 1.0 Hz when the samplerate is 44.1 kHz.
@@ -22,7 +23,9 @@ public:
 	Oscillator();
 	virtual ~Oscillator();
 
-	void generateSound();
+	static void setSamplerate(int samplesPerSecond);
+	void setFrequency(float frequency);
+	virtual void generateSound() { }
 
 protected:
 	void generateWaveTables();
@@ -45,7 +48,6 @@ protected:
 
 	// Precalculated base frequencies for all MIDI keys
 	static float baseFrequency[128];
-
 	static bool staticDataInitialized;
 
 	// In acoustic and analogue electronic instruments, two adjacent notes with
@@ -54,6 +56,10 @@ protected:
 	// simulates this: if randomDetune = 0.001, the note played by an oscillator
 	// is the nominal frequency +-0.1% (which is quite much).
 	static float randomDetune;
+
+	// Samplerate that all oscillators use. Samples per second.
+	static int samplerate;
+
 };
 
 #endif /* OSCILLATOR_H_ */

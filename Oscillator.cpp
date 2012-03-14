@@ -11,20 +11,48 @@ float Oscillator::sineTable[WAVE_TABLE_LENGTH];
 float Oscillator::triangleTable[WAVE_TABLE_LENGTH];
 float Oscillator::absSineTable[WAVE_TABLE_LENGTH];
 float Oscillator::baseFrequency[128];
-bool Oscillator::staticDataInitialized = false;
-float Oscillator::randomDetune = 0.001 / 1024;
+bool  Oscillator::staticDataInitialized = false;
+float Oscillator::randomDetune = 0.001;
+int   Oscillator::samplerate = 44100;
 
 Oscillator::Oscillator() {
 	if (!staticDataInitialized) {
+		srandom(time(NULL));
 		generateWaveTables();
 		generateBaseFrequencies();
 		staticDataInitialized = true;
 	}
+	lastSample = 0;
+	frequency = 1;
+	pulseWidth = 0.5;
+	angle = 0;
+	radiansPerSample = 0.1;
 
 }
 
 Oscillator::~Oscillator() {
 	// TODO Auto-generated destructor stub
+}
+
+// Sets global samplerate for all oscillators
+// (LowFrequencyOscillator, MainOscillator).
+void Oscillator::setSamplerate(int samplesPerSecond)
+{
+	if (samplesPerSecond > 1) {
+		samplerate = samplesPerSecond;
+	}
+}
+
+void Oscillator::setFrequency(float frequency)
+{
+	if (frequency < 1 || samplerate < 1) {
+		return;
+	}
+
+	float randomness = (float)(random() % 2048 - 1024) / 1024;
+	angle = 0;
+	frequency = (1 + randomDetune) * randomness;
+	radiansPerSample = TWO_PI * frequency / (float)samplerate;
 }
 
 // Generates waveform tables
