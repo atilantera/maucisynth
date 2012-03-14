@@ -15,3 +15,7 @@ MainOscillator::MainOscillator() {
 MainOscillator::~MainOscillator() {
 	// TODO Auto-generated destructor stub
 }
+
+void MainOscillator::generateSound(float * buffer, int bufferLength) {
+	// TODO
+}

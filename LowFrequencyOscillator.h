@@ -11,7 +11,7 @@
 #include "Oscillator.h"
 #include "SynthParameters.h"
 
-class LowFrequencyOscillator : public Oscillator{
+class LowFrequencyOscillator : public Oscillator {
 public:
 	LowFrequencyOscillator();
 	virtual ~LowFrequencyOscillator();

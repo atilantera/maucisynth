@@ -27,12 +27,9 @@ Oscillator::Oscillator() {
 	pulseWidth = 0.5;
 	angle = 0;
 	radiansPerSample = 0.1;
-
 }
 
-Oscillator::~Oscillator() {
-	// TODO Auto-generated destructor stub
-}
+Oscillator::~Oscillator() { }
 
 // Sets global samplerate for all oscillators
 // (LowFrequencyOscillator, MainOscillator).
@@ -43,15 +40,15 @@ void Oscillator::setSamplerate(int samplesPerSecond)
 	}
 }
 
-void Oscillator::setFrequency(float frequency)
+void Oscillator::setFrequency(float f)
 {
-	if (frequency < 1 || samplerate < 1) {
+	if (f < 1 || samplerate < 1) {
 		return;
 	}
 
 	float randomness = (float)(random() % 2048 - 1024) / 1024;
 	angle = 0;
-	frequency = (1 + randomDetune) * randomness;
+	frequency = f * (1 + randomDetune * randomness);
 	radiansPerSample = TWO_PI * frequency / (float)samplerate;
 }
 

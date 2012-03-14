@@ -8,12 +8,10 @@
 #include "LowFrequencyOscillator.h"
 
 LowFrequencyOscillator::LowFrequencyOscillator() {
-	// TODO Auto-generated constructor stub
-
+	modulationTarget = NONE;
 }
 
 LowFrequencyOscillator::~LowFrequencyOscillator() {
-	// TODO Auto-generated destructor stub
 }
 
 void LowFrequencyOscillator::setModulationTarget(lfoModulationTarget target)
@@ -31,12 +29,13 @@ void LowFrequencyOscillator::generateSound(float * buffer, int bufferLength) {
     // Therefore in a single sine wave lfo cycle there is _two_ points
     // where the wave sounds the same, and therefore we need to split
     // the frequency.
+
 	float increase = radiansPerSample;
     if (modulationTarget == PULSE_WIDTH) {
     	increase *= 0.5;
     }
 
-    float waveTableConstant = samplerate / TWO_PI;
+    float waveTableConstant = WAVE_TABLE_LENGTH / TWO_PI;
     endPtr = buffer + bufferLength;
 
     for (ptr = buffer; ptr < endPtr; ptr++) {

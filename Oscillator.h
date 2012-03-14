@@ -12,6 +12,8 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include <iostream>
+
 // Length of wave tables in samples. 44100 samples could store sine wave
 // at 1.0 Hz when the samplerate is 44.1 kHz.
 const int WAVE_TABLE_LENGTH = 65536;
