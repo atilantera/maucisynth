@@ -16,11 +16,11 @@ public:
 	LowFrequencyOscillator();
 	virtual ~LowFrequencyOscillator();
 
-	void setModulationTarget(lfoModulationTarget target);
+	void setModulationTarget(LfoModulationTarget target);
 	void generateSound(float * buffer, int bufferLength);
 
 private:
-	lfoModulationTarget modulationTarget;
+	LfoModulationTarget modulationTarget;
 
 };
 

@@ -14,7 +14,7 @@ LowFrequencyOscillator::LowFrequencyOscillator() {
 LowFrequencyOscillator::~LowFrequencyOscillator() {
 }
 
-void LowFrequencyOscillator::setModulationTarget(lfoModulationTarget target)
+void LowFrequencyOscillator::setModulationTarget(LfoModulationTarget target)
 {
 	modulationTarget = target;
 }

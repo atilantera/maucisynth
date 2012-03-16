@@ -11,6 +11,10 @@
 #ifndef MAINOSCILLATOR_H_
 #define MAINOSCILLATOR_H_
 
+#ifdef TESTING
+#include <iostream>
+#endif
+
 #include "Oscillator.h"
 #include "SynthParameters.h"
 
@@ -19,15 +23,33 @@ public:
 	MainOscillator();
 	virtual ~MainOscillator();
 
-	void generateSound(float * buffer, int bufferLength);
+	static void setWaveform(WaveformType w);
+	static void setModulationTarget(LfoModulationTarget m);
+
+	void noteOn(unsigned char noteKey, unsigned char noteVelocity,
+			NoteSource source);
+	void noteOff();
+	void generateSound(float * outputBuffer, float * modulatorBuffer,
+		unsigned int bufferLength);
 
 private:
-	// variable                   variable in synth.c
-	int waveform;              // osc_waveform
-	int envelopePhase;         // osc_envelope_phase
-	int previousEnvelopePhase; // osc_precious_envelope_phase
+	enum EnvelopePhase { ATTACK, DECAY, SUSTAIN, RELEASE, QUIET };
+
+	static WaveformType waveform;
+
+	// synthesisFunction points to synthesizeFromWavetable() or
+	// synthesizeSawtooth() or synthesizePulseWave().
+	static void (* synthesisFunction) (float *, float *, unsigned int);
+
+	// wavetable points to sineTable[] or triangleTable[] or
+	// absSineTable[] in class Oscillator.
+	static float * wavetable;
+
+	static LfoModulationTarget modulation;
+
+	EnvelopePhase envelopePhase;         // osc_envelope_phase
+	EnvelopePhase previousEnvelopePhase; // osc_precious_envelope_phase
 	float envelopeAmplitude;   // osc_envelope_amplitude
-	bool isProducingSound;     // osc_mute
 
 	// Amplitude envelope (ADSR curve) parameters.
 	// There are four adjacent phases of amplitude:
@@ -50,7 +72,7 @@ private:
 	// Which keyboard key this oscillator is currently playing
 	// variable                   variable in synth.c
 	unsigned char key;         // osc_key
-	int keySource;             // osc_key_source
+	NoteSource noteSource;             // osc_key_source
 
 	// Peak amplitude of the oscillator. MIDI note velocity determines
 	// this. It is coefficent between 0..1.
@@ -61,6 +83,15 @@ private:
 	// ends before the amplitude envelope reaches
 
 	int phaseTime;             // osc_time
+
+	static void synthesizeFromWavetable(float * outputBuffer, float * modulatorBuffer,
+		unsigned int bufferLength);
+
+	static void synthesizeSawtooth(float * outputBuffer, float * modulatorBuffer,
+		unsigned int bufferLength);
+
+	static void synthesizePulseWave(float * outputBuffer, float * modulatorBuffer,
+		unsigned int bufferLength);
 
 };
 

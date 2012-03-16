@@ -17,6 +17,7 @@
 #define EVENTBUFFER_H_
 
 #include <pthread.h>
+#include "tests/testing.h"
 #include "Synthesizer.h"
 
 #define GUI_TESTING

@@ -16,6 +16,12 @@ class Synthesizer {
 public:
 	Synthesizer();
 	virtual ~Synthesizer();
+
+private:
+	// Since the synthesizer is monotimbral, all the main oscillators have
+	// the same waveform and LFO modulation type
+	WaveformType waveform;
+	LfoModulationTarget modulation;
 };
 
 #endif /* SYNTHESIZER_H_ */

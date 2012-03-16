@@ -12,7 +12,7 @@ main: EventBuffer.o main.o LowFrequencyOscillator.o MainOscillator.o \
 	MainOscillator.o Oscillator.o Synthesizer.o SynthGui.o \
 	-o maucisynth
 
-EventBuffer.o: EventBuffer.cpp EventBuffer.h
+EventBuffer.o: EventBuffer.cpp EventBuffer.h tests/testing.h
 	$(CC) $(CFLAGS) -o EventBuffer.o -c EventBuffer.cpp
 
 main.o: main.cpp

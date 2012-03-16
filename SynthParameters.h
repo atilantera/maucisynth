@@ -15,7 +15,7 @@
 #ifndef SYNTHPARAMETERS_H_
 #define SYNTHPARAMETERS_H_
 
-enum controllerType {
+enum ControllerType {
 	OSC1_WAVEFORM           =  0,
 	OSC1_ATTACK             =  1,
 	OSC1_DECAY              =  2,
@@ -29,7 +29,7 @@ enum controllerType {
 	FILTER_LOWPASS          = 20
 };
 
-enum waveformType {
+enum WaveformType {
 	SINE      = 0,
 	TRIANGLE  = 1,
 	SAWTOOTH  = 2,
@@ -37,12 +37,12 @@ enum waveformType {
 	ABS_SINE  = 4
 };
 
-enum lfoFrequencyType {
+enum LfoFrequencyType {
 	FIXED    = 0,
 	RELATIVE = 1
 };
 
-enum lfoModulationTarget {
+enum LfoModulationTarget {
 	NONE        = 0,
 	FREQUENCY   = 1,
 	AMPLITUDE   = 2,

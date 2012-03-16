@@ -3,6 +3,11 @@ Tehtävää aika- ja riippuvuusjärjestyksessä:
 1. Luokka MainOscillator: äänen generointi (mahdollisesti LFO:lla moduloiden),
    verhokäyrä.
    
+   Juuri seuraavaksi metodit:
+   * synthesizeFromWavetable()
+   * synthesizeSawtooth()
+   * synthesizePulseWave()
+   
    Kun LFO moduloi, niin Synthesizer kuitenkin aina kutsuu
    LowFrequencyOscillator.generateSound():ia.
    LFO piirtää sille annettuun aaltotaulukkoon signaalinsa, ja sitten
@@ -34,6 +39,17 @@ Tehtävää aika- ja riippuvuusjärjestyksessä:
    Huom! Tallenna vapaat oskillaattorit jonona. Käytännön toteutus voi
    olla taulukko tai STL:n jono. On tehottomampaa käydä läpi kaikki
    oskillaattorit etsien ensimmäistä vapaata aina, kun tulee uusi nuotti.
+   (Tämän takia synth.c:n muuttujaa osc_mute ei enää tarvita.)
+   
+   Huom! Tehokasta note offia varten pitää tehdä taulukot
+   MainOscillator * GuiNotes[128]; ja
+   MainOscillator * MidiNotes[128];
+   Indeksinä on suoraan nuotin koskettimen numero (MIDI-numeroinnilla).
+   Kun tulee note off, niin note offin lähteestä (Gui, MIDI) riippuen
+   tsekataan jommastakummasta taulukosta oikea MainOscillator.
+   Kun tulee all notes off, niin on ihan riittävän nopeaa käydä 128
+   nuotin taulukko läpi (Tällaista erikoistapausta varten ei yksinään kannata
+   tehdä listaa kummankin nuottilähteen soivista oskillaattoreista.)
 
 7. luokka JackInterface
    * katso callbackien toteutuksesta mallia SynthGui-luokasta
@@ -46,6 +62,12 @@ Tehtävää aika- ja riippuvuusjärjestyksessä:
      että voi lähteä generoimaan seuraavaa puskurillista)
    
 8. luokka Filter
+   
+9. Optimointia: kannattaako oskillaattorin äänisynteesi laittaa inlineksi?
+   Tietenkin se kiehtoisi, mutta ei taida onnistua, koska metodeissa on
+   paikallisia muuttujia. Muutenkaan varsinaisen oskillaattorin äänisynteesi
+   ei ole pelkästään aaltotaulukosta lukujen napsimista ja arvojen summaamista
+   miksauspuskuriin. Muista modulointi.
    
 
 
