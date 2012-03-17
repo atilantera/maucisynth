@@ -1,7 +1,10 @@
 Tehtävää aika- ja riippuvuusjärjestyksessä:
 
-1. Luokka MainOscillator: äänen generointi (mahdollisesti LFO:lla moduloiden),
-   verhokäyrä.
+1. Luokka MainOscillator:
+   seuraavaksi amplitudimodulaatio ja sen testaus (siniaallolla testaus
+   riittää, koska amplitudimodulaatio on kaikille aaltomuodoille sama).
+   
+   Verhokäyrä.
       
    Kun LFO moduloi, niin Synthesizer kuitenkin aina kutsuu
    LowFrequencyOscillator.generateSound():ia.
