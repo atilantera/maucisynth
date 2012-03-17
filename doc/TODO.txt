@@ -2,12 +2,7 @@ Tehtävää aika- ja riippuvuusjärjestyksessä:
 
 1. Luokka MainOscillator: äänen generointi (mahdollisesti LFO:lla moduloiden),
    verhokäyrä.
-   
-   Juuri seuraavaksi metodit:
-   * synthesizeFromWavetable()
-   * synthesizeSawtooth()
-   * synthesizePulseWave()
-   
+      
    Kun LFO moduloi, niin Synthesizer kuitenkin aina kutsuu
    LowFrequencyOscillator.generateSound():ia.
    LFO piirtää sille annettuun aaltotaulukkoon signaalinsa, ja sitten
@@ -52,6 +47,10 @@ Tehtävää aika- ja riippuvuusjärjestyksessä:
    tehdä listaa kummankin nuottilähteen soivista oskillaattoreista.)
 
 7. luokka JackInterface
+   TÄRKEÄÄ: Jackissa on kaksi puskuria. Jos oikein muistan, niin toista
+   Jack soittaa ja toiseen syna saa generoida ääntä. Tarvitaanko lainkaan
+   puskurin kopiointia memcpy():lla synth.c:n synth_load_buffer()in tapaan?
+
    * katso callbackien toteutuksesta mallia SynthGui-luokasta
    * paitsi että tässä toteutus suoraan staattiseen
      callbackiin nopeuden vuoksi (siis ei niin, että staattinen

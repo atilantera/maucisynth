@@ -23,29 +23,27 @@ public:
 	MainOscillator();
 	virtual ~MainOscillator();
 
-	static void setWaveform(WaveformType w);
-	static void setModulationTarget(LfoModulationTarget m);
+	void setWaveform(WaveformType w);
+	void setModulationTarget(LfoModulationTarget m);
+	void setModulationAmount(float a);
 
 	void noteOn(unsigned char noteKey, unsigned char noteVelocity,
 			NoteSource source);
 	void noteOff();
 	void generateSound(float * outputBuffer, float * modulatorBuffer,
-		unsigned int bufferLength);
+		unsigned int bufferLength, bool & noteFinished);
 
-private:
-	enum EnvelopePhase { ATTACK, DECAY, SUSTAIN, RELEASE, QUIET };
+protected:
+	enum EnvelopePhase { ATTACK, DECAY, SUSTAIN, RELEASE, OFF };
 
-	static WaveformType waveform;
-
-	// synthesisFunction points to synthesizeFromWavetable() or
-	// synthesizeSawtooth() or synthesizePulseWave().
-	static void (* synthesisFunction) (float *, float *, unsigned int);
+	WaveformType waveform;
 
 	// wavetable points to sineTable[] or triangleTable[] or
 	// absSineTable[] in class Oscillator.
-	static float * wavetable;
+	float * wavetable;
 
-	static LfoModulationTarget modulation;
+	LfoModulationTarget modulation;
+	float modulationAmount;
 
 	EnvelopePhase envelopePhase;         // osc_envelope_phase
 	EnvelopePhase previousEnvelopePhase; // osc_precious_envelope_phase
@@ -76,21 +74,25 @@ private:
 
 	// Peak amplitude of the oscillator. MIDI note velocity determines
 	// this. It is coefficent between 0..1.
-	float peakAmplitude;        // osc_max_amplitude
+	float peakAmplitude;
 
 	// Playing time of current envelope phase (in samples)
 	// This must be memorized if the note that the oscillator is playing
 	// ends before the amplitude envelope reaches
-
 	int phaseTime;             // osc_time
 
-	static void synthesizeFromWavetable(float * outputBuffer, float * modulatorBuffer,
+	// Method synthesizePulseWave must have pulse width memorized between
+	// adjacent calls when pulse width modulation is on.
+	// pulseWidth is in radians (0 .. TWO_PI).
+	float pulseWidth;
+
+	void synthesizeFromWavetable(float * outputBuffer, float * modulatorBuffer,
 		unsigned int bufferLength);
 
-	static void synthesizeSawtooth(float * outputBuffer, float * modulatorBuffer,
+	void synthesizeSawtooth(float * outputBuffer, float * modulatorBuffer,
 		unsigned int bufferLength);
 
-	static void synthesizePulseWave(float * outputBuffer, float * modulatorBuffer,
+	void synthesizePulseWave(float * outputBuffer, float * modulatorBuffer,
 		unsigned int bufferLength);
 
 };

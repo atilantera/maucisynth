@@ -26,7 +26,7 @@ Oscillator::Oscillator() {
 	frequency = 1;
 	pulseWidth = 0.5;
 	angle = 0;
-	radiansPerSample = 0.1;
+	anglePerSample = 0.1;
 }
 
 Oscillator::~Oscillator() { }
@@ -42,54 +42,54 @@ void Oscillator::setSamplerate(int samplesPerSecond)
 
 void Oscillator::setFrequency(float f)
 {
-	if (f < 1 || samplerate < 1) {
+	if (f < 1) {
 		return;
 	}
 
 	float randomness = (float)(random() % 2048 - 1024) / 1024;
-	angle = 0;
 	frequency = f * (1 + randomDetune * randomness);
-	radiansPerSample = TWO_PI * frequency / (float)samplerate;
+	angle = 0;
+	anglePerSample = frequency / samplerate;
 }
 
 // Generates waveform tables
 void Oscillator::generateWaveTables()
 {
 	int i, b;
-	float angle, increase;
+	float x, increase;
 
 	// Sine wave
-	angle = 0;
-	increase = TWO_PI / WAVE_TABLE_LENGTH;
+	x = 0;
+	increase = 2 * M_PI / WAVE_TABLE_LENGTH;
 	for (i = 0; i < WAVE_TABLE_LENGTH; i++) {
-		sineTable[i] = sinf(angle);
-		angle += increase;
+		sineTable[i] = sinf(x);
+		x += increase;
 	}
 
 	// Triangle wave
 	b = WAVE_TABLE_LENGTH / 4;
-	angle = 0;
+	x = 0;
 	increase = 4.0 / (float)(WAVE_TABLE_LENGTH);
 	for (i = 0; i < b; i++) {
-		triangleTable[i] = angle;
-		angle += increase;
+		triangleTable[i] = x;
+		x += increase;
 	}
 	b *= 3;
 	for (; i < b; i++) {
-		triangleTable[i] = angle;
-		angle -= increase;
+		triangleTable[i] = x;
+		x -= increase;
 	}
 	for (; i < WAVE_TABLE_LENGTH; i++) {
-		triangleTable[i] = angle;
-		angle += increase;
+		triangleTable[i] = x;
+		x += increase;
 	}
 
 	// abs(sin)
-	angle = 0;
-	increase = 0.5 * TWO_PI / WAVE_TABLE_LENGTH;
+	x = 0;
+	increase = M_PI / WAVE_TABLE_LENGTH;
 	for (i = 0; i < WAVE_TABLE_LENGTH; i++) {
-		absSineTable[i] = -1 + fabs(sinf(angle)) * 2;
-		angle += increase;
+		absSineTable[i] = -1 + fabs(sinf(x)) * 2;
+		x += increase;
 	}
 }
 

@@ -14,11 +14,13 @@
 
 #include <iostream>
 
-// Length of wave tables in samples. 44100 samples could store sine wave
-// at 1.0 Hz when the samplerate is 44.1 kHz.
-const int WAVE_TABLE_LENGTH = 65536;
-
-const float TWO_PI = 6.283185308;
+// Length of wave tables in samples.
+// Oscillator::baseFrequency[0] ~= 8 Hz.
+// Typical samplerate is 44100 .. 96000 Hz.
+// Therefore 96000 / 8 = 12000 samples would be sufficient to reproduce
+// high-resolution waves at 8 Hz while samplerate is 96 kHz.
+// 12288 = 3 * 4096. (If system memory page size is 4 kB, it's equally 3 pages.)
+const int WAVE_TABLE_LENGTH = 12288;
 
 class Oscillator {
 public:
@@ -38,10 +40,19 @@ protected:
 	// the current peak amplitude is not sustain * peakAmplitude.
 	float lastSample;
 
-	float frequency;           // osc_frequency
-	float pulseWidth;          // osc_pulse_width
-	float angle;               // osc_angle
-	float radiansPerSample;    // osc_radians_per_sample
+	float frequency;
+	float pulseWidth;
+
+	// angle is amount of oscillator cycle, 0..1.
+	// (It would be just a nuisance to have angle in radians: angle is either
+	// projected into index of precalculated waveform table or used in
+	// generating sawtooth or pulse wave, where trigonometric function are not
+	// needed.)
+	float angle;
+	float anglePerSample;
+
+	// Samplerate that all oscillators use. Samples per second.
+	static int samplerate;
 
 	// Precalculated waveform tables
 	static float sineTable[WAVE_TABLE_LENGTH];
@@ -58,10 +69,6 @@ protected:
 	// simulates this: if randomDetune = 0.001, the note played by an oscillator
 	// is the nominal frequency +-0.1% (which is quite much).
 	static float randomDetune;
-
-	// Samplerate that all oscillators use. Samples per second.
-	static int samplerate;
-
 };
 
 #endif /* OSCILLATOR_H_ */
