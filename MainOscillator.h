@@ -11,12 +11,10 @@
 #ifndef MAINOSCILLATOR_H_
 #define MAINOSCILLATOR_H_
 
-#ifdef TESTING
-#include <iostream>
-#endif
-
 #include "Oscillator.h"
 #include "SynthParameters.h"
+
+#include "tests/testing.h"
 
 class MainOscillator : public Oscillator {
 public:
@@ -94,6 +92,9 @@ protected:
 
 	void synthesizePulseWave(float * outputBuffer, float * modulatorBuffer,
 		unsigned int bufferLength);
+
+	void applyAmplitudeModulation(float * outputBuffer, float * modulatorBuffer,
+			unsigned int bufferLength);
 
 };
 

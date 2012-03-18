@@ -116,7 +116,8 @@ void MainOscillator::generateSound(float * outputBuffer,
 	}
 
 	if (modulation == AMPLITUDE) {
-		// TODO
+		applyAmplitudeModulation(outputBuffer, modulatorBuffer,
+			bufferLength);
 	}
 
 	// TODO: applyEnvelope. use peakAmplitude with it!
@@ -152,8 +153,6 @@ float * modulatorBuffer, unsigned int bufferLength)
 			}
 		}
 	}
-
-
 }
 
 void MainOscillator::synthesizeSawtooth(float * outputBuffer,
@@ -191,6 +190,7 @@ float * modulatorBuffer, unsigned int bufferLength)
 
 	if (modulation == PULSE_WIDTH) {
 		float * startPtr = outputBuffer;
+		unsigned int difference;
 		while (outputBuffer < endPtr) {
 			if (angle < pulseWidth) {
 				*outputBuffer++ = 1;
@@ -201,8 +201,11 @@ float * modulatorBuffer, unsigned int bufferLength)
 			angle += anglePerSample;
 			if (angle > 1) {
 				angle -= 1;
-				lfoValue = modulatorBuffer[outputBuffer - startPtr];
-				pulseWidth = 0.5 * (1 + modulationAmount * lfoValue);
+				difference = outputBuffer - startPtr;
+				if (difference < bufferLength) {
+					lfoValue = modulatorBuffer[outputBuffer - startPtr];
+					pulseWidth = 0.5 * (1 + modulationAmount * lfoValue);
+				}
 			}
 		}
 	}
@@ -235,4 +238,16 @@ float * modulatorBuffer, unsigned int bufferLength)
 			}
 		}
 	}
+}
+
+void MainOscillator::applyAmplitudeModulation(float * outputBuffer,
+float * modulatorBuffer, unsigned int bufferLength)
+{
+	float lfoAmount = modulationAmount * 0.5;
+    float lfoMidpoint = 1 - lfoAmount;
+    float * endPtr = outputBuffer + bufferLength;
+    float * lfoPtr = modulatorBuffer;
+    while (outputBuffer < endPtr) {
+        *outputBuffer++ *= (lfoMidpoint + lfoAmount * (*lfoPtr++));
+    }
 }

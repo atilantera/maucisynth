@@ -17,7 +17,7 @@ int   Oscillator::samplerate = 44100;
 
 Oscillator::Oscillator() {
 	if (!staticDataInitialized) {
-		srandom(time(NULL));
+		srandom(0);
 		generateWaveTables();
 		generateBaseFrequencies();
 		staticDataInitialized = true;

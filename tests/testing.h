@@ -9,6 +9,7 @@
 #define TESTING_H_
 
 #include <assert.h>
+#include <iostream>
 
 // Defining this makes class EventBuffer print debug messages
 #define GUI_TESTING

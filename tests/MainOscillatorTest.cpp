@@ -13,6 +13,7 @@ MainOscillatorTest::MainOscillatorTest()
 	 frequencyModulatedPulse = new float[bufferLength];
 	 frequencyModulatedAbsSine = new float[bufferLength];
 	 pulseModulatedPulse = new float[bufferLength];
+	 amplitudeModulatedPulse = new float[bufferLength];
 }
 
 MainOscillatorTest::~MainOscillatorTest()
@@ -26,6 +27,7 @@ MainOscillatorTest::~MainOscillatorTest()
 	delete [] frequencyModulatedPulse;
 	delete [] frequencyModulatedAbsSine;
 	delete [] pulseModulatedPulse;
+	delete [] amplitudeModulatedPulse;
 }
 
 bool MainOscillatorTest::initTests()
@@ -45,6 +47,7 @@ void MainOscillatorTest::testAll()
 {
 	testBasicSynthesis();
 	testFrequencyModulation(false);
+	testAmplitudeModulation(false);
 	testPulseWidthModulation(false);
 }
 
@@ -237,6 +240,33 @@ void MainOscillatorTest::testFrequencyModulation(bool generateOutput)
 	}
 }
 
+void MainOscillatorTest::testAmplitudeModulation(bool generateOutput)
+{
+	unsigned int i;
+	samplerate = bufferLength;
+	modulation = AMPLITUDE;
+	modulationAmount = 0.5;
+	setFrequency(4.0);
+
+	setWaveform(PULSE);
+	synthesizePulseWave(outputBuffer, modulatorBuffer, bufferLength);
+	applyAmplitudeModulation(outputBuffer, modulatorBuffer, bufferLength);
+	for (i = 0; i < bufferLength; i += 4) {
+		if (fabs(outputBuffer[i] - amplitudeModulatedPulse[i]) > 0.001) {
+			std::cout << "MainOscillatorTest::testAmplitudeModulation "
+				"failed!" << std::endl;
+		}
+		break;
+	}
+	if (generateOutput) {
+		testFile << "Amplitude modulated pulse wave. Amplitude = 50%..100%"
+				<< std::endl;
+		for (i = 0; i < bufferLength; i++) {
+			testFile << outputBuffer[i] << std::endl;
+		}
+	}
+}
+
 void MainOscillatorTest::testPulseWidthModulation(bool generateOutput)
 {
 	unsigned int i;
@@ -302,15 +332,20 @@ bool MainOscillatorTest::initTestData()
 		dataFile.getline(buffer, 256);
 		frequencyModulatedAbsSine[i] = atof(buffer);
 	}
-	dataFile.close();
 
 	dataFile.getline(buffer, 256);
 	for (i = 0; i < bufferLength; i++) {
 		dataFile.getline(buffer, 256);
 		pulseModulatedPulse[i] = atof(buffer);
 	}
-	dataFile.close();
 
+	dataFile.getline(buffer, 256);
+	for (i = 0; i < bufferLength; i++) {
+		dataFile.getline(buffer, 256);
+		amplitudeModulatedPulse[i] = atof(buffer);
+	}
+
+	dataFile.close();
 	float x;
 	for (i = 0; i < bufferLength; i++) {
 		x = (float)i / bufferLength * 2 * M_PI;

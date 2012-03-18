@@ -23,6 +23,7 @@ public:
 
 	void testBasicSynthesis();
 	void testFrequencyModulation(bool generateOutput);
+	void testAmplitudeModulation(bool generateOutput);
 	void testPulseWidthModulation(bool generateOutput);
 
 private:
@@ -39,6 +40,7 @@ private:
 	float * frequencyModulatedPulse;
 	float * frequencyModulatedAbsSine;
 	float * pulseModulatedPulse;
+	float * amplitudeModulatedPulse;
 
 	bool initTestData();
 };

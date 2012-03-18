@@ -5,7 +5,8 @@ LIBS=-ljack -lm `pkg-config --libs gtk+-2.0`
 RM=rm -f
 
 all: main
-
+	cd tests && make && cd ..
+	
 main: EventBuffer.o main.o LowFrequencyOscillator.o MainOscillator.o \
 	Oscillator.o Synthesizer.o SynthGui.o
 	$(LD) $(LIBS) EventBuffer.o main.o LowFrequencyOscillator.o \
