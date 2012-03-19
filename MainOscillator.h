@@ -27,7 +27,7 @@ public:
 
 	void noteOn(unsigned char noteKey, unsigned char noteVelocity);
 	void noteOff();
-	void generateSound(float * outputBuffer, float * modulatorBuffer,
+	void generateSound(float outputBuffer[], const float modulatorBuffer[],
 		bool & noteFinished);
 
 protected:
@@ -83,14 +83,17 @@ protected:
 	// pulseWidth is in radians (0 .. TWO_PI).
 	float pulseWidth;
 
-	void synthesizeFromWavetable(float * outputBuffer, float * modulatorBuffer);
+	void synthesizeFromWavetable(float outputBuffer[],
+		const float modulatorBuffer[]);
 
-	void synthesizeSawtooth(float * outputBuffer, float * modulatorBuffer);
+	void synthesizeSawtooth(float outputBuffer[],
+		const float modulatorBuffer[]);
 
-	void synthesizePulseWave(float * outputBuffer, float * modulatorBuffer);
+	void synthesizePulseWave(float outputBuffer[],
+		const float modulatorBuffer[]);
 
-	void applyAmplitudeModulation(float * outputBuffer,
-		float * modulatorBuffer);
+	void applyAmplitudeModulation(float outputBuffer[],
+		const float modulatorBuffer[]);
 
 };
 

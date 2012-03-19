@@ -97,8 +97,8 @@ void MainOscillator::noteOff()
 // bufferLength = length of outbutBuffer and modulatorBuffer in samples
 // noteFinished is changed to true if oscillator finished its envelope curve
 // (phase RELEASE ended).
-void MainOscillator::generateSound(float * outputBuffer,
-	float * modulatorBuffer, bool & noteFinished)
+void MainOscillator::generateSound(float outputBuffer[],
+const float modulatorBuffer[], bool & noteFinished)
 {
 	switch (waveform) {
 	case SINE:
@@ -123,28 +123,26 @@ void MainOscillator::generateSound(float * outputBuffer,
 	noteFinished = (envelopePhase == OFF);
 }
 
-void MainOscillator::synthesizeFromWavetable(float * outputBuffer,
-float * modulatorBuffer)
+void MainOscillator::synthesizeFromWavetable(float outputBuffer[],
+const float modulatorBuffer[])
 {
-	float * endPtr = outputBuffer + bufferLength;
-	unsigned int index;
-	float lfoValue;
+	unsigned int i;
 
 	if (modulation == FREQUENCY) {
-		while (outputBuffer < endPtr) {
-			index = (unsigned int)(angle * WAVE_TABLE_LENGTH + 0.5);
-			*outputBuffer++ = wavetable[index];
-			lfoValue = *modulatorBuffer++;
-			angle += anglePerSample * (1 + modulationAmount * lfoValue);
+		for (i = 0; i < bufferLength; i++) {
+			outputBuffer[i]
+				= wavetable[(int)(angle * WAVE_TABLE_LENGTH + 0.5)];
+			angle += anglePerSample * (1 + modulationAmount
+				* modulatorBuffer[i]);
 			if (angle > 1) {
 				angle -= 1;
 			}
 		}
 	}
 	else {
-		while (outputBuffer < endPtr) {
-			index = (unsigned int)(angle * WAVE_TABLE_LENGTH + 0.5);
-			*outputBuffer++ = wavetable[index];
+		for (i = 0; i < bufferLength; i++) {
+			outputBuffer[i]
+				= wavetable[(int) (angle * WAVE_TABLE_LENGTH + 0.5)];
 			angle += anglePerSample;
 			if (angle > 1) {
 				angle -= 1;
@@ -153,25 +151,24 @@ float * modulatorBuffer)
 	}
 }
 
-void MainOscillator::synthesizeSawtooth(float * outputBuffer,
-float * modulatorBuffer)
+void MainOscillator::synthesizeSawtooth(float outputBuffer[],
+const float modulatorBuffer[])
 {
-	float * endPtr = outputBuffer + bufferLength;
-	float lfoValue;
+	unsigned int i;
 
 	if (modulation == FREQUENCY) {
-		while (outputBuffer < endPtr) {
-			*outputBuffer++ = angle * 2 - 1;
-			lfoValue = *modulatorBuffer++;
-			angle += anglePerSample * (1 + modulationAmount * lfoValue);
+		for (i = 0; i < bufferLength; i++) {
+			outputBuffer[i] = angle * 2 - 1;
+			angle += anglePerSample * (1 + modulationAmount
+				* modulatorBuffer[i]);
 			if (angle > 1) {
 				angle -= 1;
 			}
 		}
 	}
 	else {
-		while (outputBuffer < endPtr) {
-			*outputBuffer++ = angle * 2 - 1;
+		for (i = 0; i < bufferLength; i++) {
+			outputBuffer[i] = angle * 2 - 1;
 			angle += anglePerSample;
 			if (angle > 1) {
 				angle -= 1;
@@ -180,55 +177,48 @@ float * modulatorBuffer)
 	}
 }
 
-void MainOscillator::synthesizePulseWave(float * outputBuffer,
-float * modulatorBuffer)
+void MainOscillator::synthesizePulseWave(float outputBuffer[],
+const float modulatorBuffer[])
 {
-	float * endPtr = outputBuffer + bufferLength;
-	float lfoValue;
+	unsigned int i;
 
 	if (modulation == PULSE_WIDTH) {
-		float * startPtr = outputBuffer;
-		unsigned int difference;
-		while (outputBuffer < endPtr) {
+		for (i = 0; i < bufferLength; i++) {
 			if (angle < pulseWidth) {
-				*outputBuffer++ = 1;
+				outputBuffer[i] = 1;
 			}
 			else {
-				*outputBuffer++ = -1;
+				outputBuffer[i] = -1;
 			}
 			angle += anglePerSample;
 			if (angle > 1) {
 				angle -= 1;
-				difference = outputBuffer - startPtr;
-				if (difference < bufferLength) {
-					lfoValue = modulatorBuffer[outputBuffer - startPtr];
-					pulseWidth = 0.5 * (1 + modulationAmount * lfoValue);
-				}
+				pulseWidth = 0.5 * (1 + modulationAmount * modulatorBuffer[i]);
 			}
 		}
 	}
 	else if (modulation == FREQUENCY) {
-		while (outputBuffer < endPtr) {
+		for (i = 0; i < bufferLength; i++) {
 			if (angle < 0.5) {
-				*outputBuffer++ = 1;
+				outputBuffer[i] = 1;
 			}
 			else {
-				*outputBuffer++ = -1;
+				outputBuffer[i] = -1;
 			}
-			lfoValue = *modulatorBuffer++;
-			angle += anglePerSample * (1 + modulationAmount * lfoValue);
+			angle += anglePerSample * (1 + modulationAmount
+				* modulatorBuffer[i]);
 			if (angle > 1) {
 				angle -= 1;
 			}
 		}
 	}
 	else {
-		while (outputBuffer < endPtr) {
+		for (i = 0; i < bufferLength; i++) {
 			if (angle < 0.5) {
-				*outputBuffer++ = 1;
+				outputBuffer[i] = 1;
 			}
 			else {
-				*outputBuffer++ = -1;
+				outputBuffer[i] = -1;
 			}
 			angle += anglePerSample;
 			if (angle > 1) {
@@ -238,14 +228,13 @@ float * modulatorBuffer)
 	}
 }
 
-void MainOscillator::applyAmplitudeModulation(float * outputBuffer,
-float * modulatorBuffer)
+void MainOscillator::applyAmplitudeModulation(float outputBuffer[],
+const float modulatorBuffer[])
 {
 	float lfoAmount = modulationAmount * 0.5;
     float lfoMidpoint = 1 - lfoAmount;
-    float * endPtr = outputBuffer + bufferLength;
-    float * lfoPtr = modulatorBuffer;
-    while (outputBuffer < endPtr) {
-        *outputBuffer++ *= (lfoMidpoint + lfoAmount * (*lfoPtr++));
+
+    for (unsigned int i = 0; i < bufferLength; i++) {
+       outputBuffer[i] *= lfoMidpoint + lfoAmount * modulatorBuffer[i];
     }
 }

@@ -19,10 +19,7 @@ void LowFrequencyOscillator::setModulationTarget(LfoModulationTarget target)
 	modulationTarget = target;
 }
 
-void LowFrequencyOscillator::generateSound(float * buffer) {
-	float * endPtr = buffer + bufferLength;
-	int index;
-
+void LowFrequencyOscillator::generateSound(float buffer[]) {
 	// With pulse width modulation, 70% on-pulse / 30% off-pulse sounds
     // the same to the ear as 30% on-pulse / 70% off-pulse.
     // Therefore in a single sine wave lfo cycle there is _two_ points
@@ -33,13 +30,12 @@ void LowFrequencyOscillator::generateSound(float * buffer) {
     	increase *= 0.5;
     }
 
-    while (buffer < endPtr) {
+    for (unsigned int i = 0; i < bufferLength; i++) {
+		// (int)(x + 0.5) is faster than calling lroundf()
+		buffer[i] = sineTable[(int)(angle * WAVE_TABLE_LENGTH + 0.5)];
+		angle += increase;
 		if (angle > 1) {
 			angle -= 1;
 		}
-		// (int)(x + 0.5) is faster than calling lroundf()
-    	index = (int)(angle * WAVE_TABLE_LENGTH + 0.5);
-		*buffer++ = sineTable[index];
-		angle += increase;
 	}
 }
