@@ -13,7 +13,8 @@ float Oscillator::absSineTable[WAVE_TABLE_LENGTH];
 float Oscillator::baseFrequency[128];
 bool  Oscillator::staticDataInitialized = false;
 float Oscillator::randomDetune = 0.001;
-int   Oscillator::samplerate = 44100;
+unsigned int Oscillator::samplerate = 44100;
+unsigned int Oscillator::bufferLength = 128;
 
 Oscillator::Oscillator() {
 	if (!staticDataInitialized) {
@@ -33,10 +34,19 @@ Oscillator::~Oscillator() { }
 
 // Sets global samplerate for all oscillators
 // (LowFrequencyOscillator, MainOscillator).
-void Oscillator::setSamplerate(int samplesPerSecond)
+void Oscillator::setSamplerate(unsigned int samplesPerSecond)
 {
 	if (samplesPerSecond > 1) {
 		samplerate = samplesPerSecond;
+	}
+}
+
+// Sets global buffer length for all oscillators
+// (LowFrequencyOscillator, MainOscillator).
+void Oscillator::setBufferLength(unsigned int lengthInSamples)
+{
+	if (lengthInSamples > 1) {
+		bufferLength = lengthInSamples;
 	}
 }
 

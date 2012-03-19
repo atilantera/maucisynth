@@ -3,17 +3,18 @@
 
 MainOscillatorTest::MainOscillatorTest()
 {
-	 bufferLength = 128;
-	 outputBuffer = new float[bufferLength];
-	 modulatorBuffer = new float[bufferLength];
+	 testBufferLength = 128;
 
-	 frequencyModulatedSine = new float[bufferLength];
-	 frequencyModulatedTriangle = new float[bufferLength];
-	 frequencyModulatedSawtooth = new float[bufferLength];
-	 frequencyModulatedPulse = new float[bufferLength];
-	 frequencyModulatedAbsSine = new float[bufferLength];
-	 pulseModulatedPulse = new float[bufferLength];
-	 amplitudeModulatedPulse = new float[bufferLength];
+	 outputBuffer = new float[testBufferLength];
+	 modulatorBuffer = new float[testBufferLength];
+
+	 frequencyModulatedSine = new float[testBufferLength];
+	 frequencyModulatedTriangle = new float[testBufferLength];
+	 frequencyModulatedSawtooth = new float[testBufferLength];
+	 frequencyModulatedPulse = new float[testBufferLength];
+	 frequencyModulatedAbsSine = new float[testBufferLength];
+	 pulseModulatedPulse = new float[testBufferLength];
+	 amplitudeModulatedPulse = new float[testBufferLength];
 }
 
 MainOscillatorTest::~MainOscillatorTest()
@@ -63,10 +64,11 @@ void MainOscillatorTest::testBasicSynthesis()
 	unsigned int i;
 	float x, growth;
 	samplerate = 32;
+	Oscillator::setBufferLength(32);
 	setFrequency(2.0);
 
 	// Sine wave 1
-	synthesizeFromWavetable(outputBuffer, modulatorBuffer, 32);
+	synthesizeFromWavetable(outputBuffer, modulatorBuffer);
 	for (i = 0; i < 32; i++) {
 		x = (float)i / 16 * 2 * M_PI;
 		if (fabs(outputBuffer[i] - sinf(x) > 0.01)) {
@@ -78,7 +80,7 @@ void MainOscillatorTest::testBasicSynthesis()
 
 	// Triangle wave 1
 	setWaveform(TRIANGLE);
-	synthesizeFromWavetable(outputBuffer, modulatorBuffer, 32);
+	synthesizeFromWavetable(outputBuffer, modulatorBuffer);
 	x = 0;
 	growth = 0.25;
 	for (i = 0; i < 32; i++) {
@@ -99,7 +101,7 @@ void MainOscillatorTest::testBasicSynthesis()
 	}
 
 	// Sawtooth wave 1
-	synthesizeSawtooth(outputBuffer, modulatorBuffer, 32);
+	synthesizeSawtooth(outputBuffer, modulatorBuffer);
 	x = -1;
 	growth = 0.125;
 	for (i = 0; i < 32; i++) {
@@ -116,7 +118,7 @@ void MainOscillatorTest::testBasicSynthesis()
 	}
 
 	// Pulse wave 1
-	synthesizePulseWave(outputBuffer, modulatorBuffer, 32);
+	synthesizePulseWave(outputBuffer, modulatorBuffer);
 	x = 1;
 	for (i = 0; i < 32; i++) {
 		if (i == 8 || i == 24) {
@@ -134,7 +136,7 @@ void MainOscillatorTest::testBasicSynthesis()
 
 	// Abs-sine wave 1
 	setWaveform(ABS_SINE);
-	synthesizeFromWavetable(outputBuffer, modulatorBuffer, 32);
+	synthesizeFromWavetable(outputBuffer, modulatorBuffer);
 	for (i = 0; i < 32; i++) {
 		x = (float)i / 32 * 2 * M_PI;
 		x = 2 * fabs(sinf(x)) - 1;
@@ -149,21 +151,22 @@ void MainOscillatorTest::testBasicSynthesis()
 void MainOscillatorTest::testFrequencyModulation(bool generateOutput)
 {
 	unsigned int i;
-	samplerate = bufferLength;
+	samplerate = testBufferLength;
+	Oscillator::setBufferLength(testBufferLength);
 	modulation = FREQUENCY;
 	modulationAmount = 0.5;
 	setFrequency(4.0);
 
 	setWaveform(SINE);
-	synthesizeFromWavetable(outputBuffer, modulatorBuffer, bufferLength);
+	synthesizeFromWavetable(outputBuffer, modulatorBuffer);
 	if (generateOutput) {
 		testFile << "Frequency modulated sine wave. Wavelength = 32 +- 50%"
 				<< std::endl;
-		for (i = 0; i < bufferLength; i++) {
+		for (i = 0; i < testBufferLength; i++) {
 			testFile << outputBuffer[i] << std::endl;
 		}
 	}
-	for (i = 0; i < bufferLength; i += 5) {
+	for (i = 0; i < testBufferLength; i += 5) {
 		if (fabs(outputBuffer[i] - frequencyModulatedSine[i]) > 0.001) {
 			std::cout << "MainOscillatorTest::testFrequencyModulation: "
 				" sine wave failed!" << std::endl;
@@ -172,15 +175,15 @@ void MainOscillatorTest::testFrequencyModulation(bool generateOutput)
 	}
 
 	setWaveform(TRIANGLE);
-	synthesizeFromWavetable(outputBuffer, modulatorBuffer, bufferLength);
+	synthesizeFromWavetable(outputBuffer, modulatorBuffer);
 	if (generateOutput) {
 		testFile << "Frequency modulated triangle wave. Wavelength = 32 +- 50%"
 				<< std::endl;
-		for (i = 0; i < bufferLength; i++) {
+		for (i = 0; i < testBufferLength; i++) {
 			testFile << outputBuffer[i] << std::endl;
 		}
 	}
-	for (i = 0; i < bufferLength; i += 5) {
+	for (i = 0; i < testBufferLength; i += 5) {
 		if (fabs(outputBuffer[i] - frequencyModulatedTriangle[i]) > 0.001) {
 			std::cout << "MainOscillatorTest::testFrequencyModulation: "
 				" triangle wave failed!" << std::endl;
@@ -189,15 +192,15 @@ void MainOscillatorTest::testFrequencyModulation(bool generateOutput)
 	}
 
 	setWaveform(SAWTOOTH);
-	synthesizeSawtooth(outputBuffer, modulatorBuffer, bufferLength);
+	synthesizeSawtooth(outputBuffer, modulatorBuffer);
 	if (generateOutput) {
 		testFile << "Frequency modulated sawtooth wave. Wavelength = 32 +- 50%"
 				<< std::endl;
-		for (i = 0; i < bufferLength; i++) {
+		for (i = 0; i < testBufferLength; i++) {
 			testFile << outputBuffer[i] << std::endl;
 		}
 	}
-	for (i = 0; i < bufferLength; i += 5) {
+	for (i = 0; i < testBufferLength; i += 5) {
 		if (fabs(outputBuffer[i] - frequencyModulatedSawtooth[i]) > 0.001) {
 			std::cout << "MainOscillatorTest::testFrequencyModulation: "
 				" sawtooth wave failed!" << std::endl;
@@ -206,15 +209,15 @@ void MainOscillatorTest::testFrequencyModulation(bool generateOutput)
 	}
 
 	setWaveform(PULSE);
-	synthesizePulseWave(outputBuffer, modulatorBuffer, bufferLength);
+	synthesizePulseWave(outputBuffer, modulatorBuffer);
 	if (generateOutput) {
 		testFile << "Frequency modulated pulse wave. Wavelength = 32 +- 50%"
 				<< std::endl;
-		for (i = 0; i < bufferLength; i++) {
+		for (i = 0; i < testBufferLength; i++) {
 			testFile << outputBuffer[i] << std::endl;
 		}
 	}
-	for (i = 0; i < bufferLength; i += 5) {
+	for (i = 0; i < testBufferLength; i += 5) {
 		if (fabs(outputBuffer[i] - frequencyModulatedPulse[i]) > 0.001) {
 			std::cout << "MainOscillatorTest::testFrequencyModulation: "
 				" pulse wave failed!" << std::endl;
@@ -223,15 +226,15 @@ void MainOscillatorTest::testFrequencyModulation(bool generateOutput)
 	}
 
 	setWaveform(ABS_SINE);
-	synthesizeFromWavetable(outputBuffer, modulatorBuffer, bufferLength);
+	synthesizeFromWavetable(outputBuffer, modulatorBuffer);
 	if (generateOutput) {
 		testFile << "Frequency modulated abs-sine wave. Wavelength = 32 +- 50%"
 				<< std::endl;
-		for (i = 0; i < bufferLength; i++) {
+		for (i = 0; i < testBufferLength; i++) {
 			testFile << outputBuffer[i] << std::endl;
 		}
 	}
-	for (i = 0; i < bufferLength; i += 5) {
+	for (i = 0; i < testBufferLength; i += 5) {
 		if (fabs(outputBuffer[i] - frequencyModulatedAbsSine[i]) > 0.001) {
 			std::cout << "MainOscillatorTest::testFrequencyModulation: "
 				" abs-sine wave failed!" << std::endl;
@@ -243,15 +246,16 @@ void MainOscillatorTest::testFrequencyModulation(bool generateOutput)
 void MainOscillatorTest::testAmplitudeModulation(bool generateOutput)
 {
 	unsigned int i;
-	samplerate = bufferLength;
+	samplerate = testBufferLength;
+	Oscillator::setBufferLength(testBufferLength);
 	modulation = AMPLITUDE;
 	modulationAmount = 0.5;
 	setFrequency(4.0);
 
 	setWaveform(PULSE);
-	synthesizePulseWave(outputBuffer, modulatorBuffer, bufferLength);
-	applyAmplitudeModulation(outputBuffer, modulatorBuffer, bufferLength);
-	for (i = 0; i < bufferLength; i += 4) {
+	synthesizePulseWave(outputBuffer, modulatorBuffer);
+	applyAmplitudeModulation(outputBuffer, modulatorBuffer);
+	for (i = 0; i < testBufferLength; i += 4) {
 		if (fabs(outputBuffer[i] - amplitudeModulatedPulse[i]) > 0.001) {
 			std::cout << "MainOscillatorTest::testAmplitudeModulation "
 				"failed!" << std::endl;
@@ -261,7 +265,7 @@ void MainOscillatorTest::testAmplitudeModulation(bool generateOutput)
 	if (generateOutput) {
 		testFile << "Amplitude modulated pulse wave. Amplitude = 50%..100%"
 				<< std::endl;
-		for (i = 0; i < bufferLength; i++) {
+		for (i = 0; i < testBufferLength; i++) {
 			testFile << outputBuffer[i] << std::endl;
 		}
 	}
@@ -270,21 +274,22 @@ void MainOscillatorTest::testAmplitudeModulation(bool generateOutput)
 void MainOscillatorTest::testPulseWidthModulation(bool generateOutput)
 {
 	unsigned int i;
-	samplerate = bufferLength;
+	samplerate = testBufferLength;
+	Oscillator::setBufferLength(testBufferLength);
 	modulation = PULSE_WIDTH;
 	modulationAmount = 0.5;
 	setFrequency(4.0);
 
 	setWaveform(PULSE);
-	synthesizePulseWave(outputBuffer, modulatorBuffer, bufferLength);
+	synthesizePulseWave(outputBuffer, modulatorBuffer);
 	if (generateOutput) {
 		testFile << "Pulse width modulated pulse wave. Pulse width = 16 +- 50%"
 				<< std::endl;
-		for (i = 0; i < bufferLength; i++) {
+		for (i = 0; i < testBufferLength; i++) {
 			testFile << outputBuffer[i] << std::endl;
 		}
 	}
-	for (i = 0; i < bufferLength; i += 4) {
+	for (i = 0; i < testBufferLength; i += 4) {
 		if (fabs(outputBuffer[i] - frequencyModulatedPulse[i]) > 0.001) {
 			std::cout << "MainOscillatorTest::testFrequencyModulation: "
 				" pulse wave failed!" << std::endl;
@@ -304,51 +309,51 @@ bool MainOscillatorTest::initTestData()
 	}
 
 	dataFile.getline(buffer, 256);
-	for (i = 0; i < bufferLength; i++) {
+	for (i = 0; i < testBufferLength; i++) {
 		dataFile.getline(buffer, 256);
 		frequencyModulatedSine[i] = atof(buffer);
 	}
 
 	dataFile.getline(buffer, 256);
-	for (i = 0; i < bufferLength; i++) {
+	for (i = 0; i < testBufferLength; i++) {
 		dataFile.getline(buffer, 256);
 		frequencyModulatedTriangle[i] = atof(buffer);
 	}
 
 	dataFile.getline(buffer, 256);
-	for (i = 0; i < bufferLength; i++) {
+	for (i = 0; i < testBufferLength; i++) {
 		dataFile.getline(buffer, 256);
 		frequencyModulatedSawtooth[i] = atof(buffer);
 	}
 
 	dataFile.getline(buffer, 256);
-	for (i = 0; i < bufferLength; i++) {
+	for (i = 0; i < testBufferLength; i++) {
 		dataFile.getline(buffer, 256);
 		frequencyModulatedPulse[i] = atof(buffer);
 	}
 
 	dataFile.getline(buffer, 256);
-	for (i = 0; i < bufferLength; i++) {
+	for (i = 0; i < testBufferLength; i++) {
 		dataFile.getline(buffer, 256);
 		frequencyModulatedAbsSine[i] = atof(buffer);
 	}
 
 	dataFile.getline(buffer, 256);
-	for (i = 0; i < bufferLength; i++) {
+	for (i = 0; i < testBufferLength; i++) {
 		dataFile.getline(buffer, 256);
 		pulseModulatedPulse[i] = atof(buffer);
 	}
 
 	dataFile.getline(buffer, 256);
-	for (i = 0; i < bufferLength; i++) {
+	for (i = 0; i < testBufferLength; i++) {
 		dataFile.getline(buffer, 256);
 		amplitudeModulatedPulse[i] = atof(buffer);
 	}
 
 	dataFile.close();
 	float x;
-	for (i = 0; i < bufferLength; i++) {
-		x = (float)i / bufferLength * 2 * M_PI;
+	for (i = 0; i < testBufferLength; i++) {
+		x = (float)i / testBufferLength * 2 * M_PI;
 		modulatorBuffer[i] = sinf(x);
 	}
 

@@ -7,6 +7,8 @@
 
 #include "LfoTest.h"
 
+const unsigned int testBufferLength = 40;
+
 LfoTest::LfoTest()
 {
 	// Random seed must be a constant so that test can be exactly repeatable
@@ -51,11 +53,12 @@ void LfoTest::testFrequencyRandomness()
 }
 
 void LfoTest::testLFO() {
-	int bufferLength = 40;
-	float soundBuffer[40];
+	float soundBuffer[testBufferLength];
 	LowFrequencyOscillator osc;
 
-	int i;
+	Oscillator::setBufferLength(testBufferLength);
+
+	unsigned int i;
 	float x;
 	float frequency;
 
@@ -63,8 +66,8 @@ void LfoTest::testLFO() {
 
 	for (frequency = 1; frequency < 10; frequency *= 1.9) {
 		setFrequency(frequency);
-		generateSound(soundBuffer, bufferLength);
-		for (i = 0; i < bufferLength; i++) {
+		generateSound(soundBuffer);
+		for (i = 0; i < testBufferLength; i++) {
 			x = (float)i / 40 * 2 * M_PI * frequency;
 			if (fabs(soundBuffer[i] - sinf(x)) > 0.01 * frequency) {
 				std::cout << "testLFO failed! frequency=" << frequency <<

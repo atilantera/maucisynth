@@ -67,8 +67,7 @@ void MainOscillator::setModulationAmount(float a)
 
 // Sets oscillator base frequency and maximum amplitude.
 // Sets envelope curve to the beginning of attack phase.
-void MainOscillator::noteOn(unsigned char noteKey, unsigned char noteVelocity,
-	NoteSource source)
+void MainOscillator::noteOn(unsigned char noteKey, unsigned char noteVelocity)
 {
 	if (noteKey > 127 || noteVelocity == 0) {
 		return;
@@ -99,25 +98,24 @@ void MainOscillator::noteOff()
 // noteFinished is changed to true if oscillator finished its envelope curve
 // (phase RELEASE ended).
 void MainOscillator::generateSound(float * outputBuffer,
-	float * modulatorBuffer, unsigned int bufferLength, bool & noteFinished)
+	float * modulatorBuffer, bool & noteFinished)
 {
 	switch (waveform) {
 	case SINE:
 	case TRIANGLE:
 	case ABS_SINE:
-		synthesizeFromWavetable(outputBuffer, modulatorBuffer, bufferLength);
+		synthesizeFromWavetable(outputBuffer, modulatorBuffer);
 		break;
 	case SAWTOOTH:
-		synthesizeSawtooth(outputBuffer, modulatorBuffer, bufferLength);
+		synthesizeSawtooth(outputBuffer, modulatorBuffer);
 		break;
 	case PULSE:
-		synthesizePulseWave(outputBuffer, modulatorBuffer, bufferLength);
+		synthesizePulseWave(outputBuffer, modulatorBuffer);
 		break;
 	}
 
 	if (modulation == AMPLITUDE) {
-		applyAmplitudeModulation(outputBuffer, modulatorBuffer,
-			bufferLength);
+		applyAmplitudeModulation(outputBuffer, modulatorBuffer);
 	}
 
 	// TODO: applyEnvelope. use peakAmplitude with it!
@@ -126,7 +124,7 @@ void MainOscillator::generateSound(float * outputBuffer,
 }
 
 void MainOscillator::synthesizeFromWavetable(float * outputBuffer,
-float * modulatorBuffer, unsigned int bufferLength)
+float * modulatorBuffer)
 {
 	float * endPtr = outputBuffer + bufferLength;
 	unsigned int index;
@@ -156,7 +154,7 @@ float * modulatorBuffer, unsigned int bufferLength)
 }
 
 void MainOscillator::synthesizeSawtooth(float * outputBuffer,
-float * modulatorBuffer, unsigned int bufferLength)
+float * modulatorBuffer)
 {
 	float * endPtr = outputBuffer + bufferLength;
 	float lfoValue;
@@ -183,7 +181,7 @@ float * modulatorBuffer, unsigned int bufferLength)
 }
 
 void MainOscillator::synthesizePulseWave(float * outputBuffer,
-float * modulatorBuffer, unsigned int bufferLength)
+float * modulatorBuffer)
 {
 	float * endPtr = outputBuffer + bufferLength;
 	float lfoValue;
@@ -241,7 +239,7 @@ float * modulatorBuffer, unsigned int bufferLength)
 }
 
 void MainOscillator::applyAmplitudeModulation(float * outputBuffer,
-float * modulatorBuffer, unsigned int bufferLength)
+float * modulatorBuffer)
 {
 	float lfoAmount = modulationAmount * 0.5;
     float lfoMidpoint = 1 - lfoAmount;

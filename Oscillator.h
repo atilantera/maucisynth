@@ -8,10 +8,9 @@
 #ifndef OSCILLATOR_H_
 #define OSCILLATOR_H_
 
-#include <math.h>
-#include <stdlib.h>
-#include <time.h>
-
+#include <cmath>
+#include <cstdlib>
+#include <ctime>
 #include <iostream>
 
 // Length of wave tables in samples.
@@ -27,7 +26,9 @@ public:
 	Oscillator();
 	virtual ~Oscillator();
 
-	static void setSamplerate(int samplesPerSecond);
+	static void setSamplerate(unsigned int samplesPerSecond);
+	static void setBufferLength(unsigned int lengthInSamples);
+
 	void setFrequency(float frequency);
 	virtual void generateSound() { }
 
@@ -52,7 +53,11 @@ protected:
 	float anglePerSample;
 
 	// Samplerate that all oscillators use. Samples per second.
-	static int samplerate;
+	static unsigned int samplerate;
+
+	// Length of output buffer and possible modulator buffer in samples
+	// for method generateSound().
+	static unsigned int bufferLength;
 
 	// Precalculated waveform tables
 	static float sineTable[WAVE_TABLE_LENGTH];

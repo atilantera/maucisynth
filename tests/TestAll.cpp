@@ -9,7 +9,7 @@
 #include "LfoTest.h"
 #include "MainOscillatorTest.h"
 
-int main(int argc, char * argv[])
+int main()
 {
 	std::cout << "Testing LowFrequencyOscillator" << std::endl;
 	LfoTest lfo;

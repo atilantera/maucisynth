@@ -19,7 +19,7 @@ void LowFrequencyOscillator::setModulationTarget(LfoModulationTarget target)
 	modulationTarget = target;
 }
 
-void LowFrequencyOscillator::generateSound(float * buffer, int bufferLength) {
+void LowFrequencyOscillator::generateSound(float * buffer) {
 	float * endPtr = buffer + bufferLength;
 	int index;
 

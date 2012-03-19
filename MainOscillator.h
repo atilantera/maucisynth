@@ -25,11 +25,10 @@ public:
 	void setModulationTarget(LfoModulationTarget m);
 	void setModulationAmount(float a);
 
-	void noteOn(unsigned char noteKey, unsigned char noteVelocity,
-			NoteSource source);
+	void noteOn(unsigned char noteKey, unsigned char noteVelocity);
 	void noteOff();
 	void generateSound(float * outputBuffer, float * modulatorBuffer,
-		unsigned int bufferLength, bool & noteFinished);
+		bool & noteFinished);
 
 protected:
 	enum EnvelopePhase { ATTACK, DECAY, SUSTAIN, RELEASE, OFF };
@@ -84,17 +83,14 @@ protected:
 	// pulseWidth is in radians (0 .. TWO_PI).
 	float pulseWidth;
 
-	void synthesizeFromWavetable(float * outputBuffer, float * modulatorBuffer,
-		unsigned int bufferLength);
+	void synthesizeFromWavetable(float * outputBuffer, float * modulatorBuffer);
 
-	void synthesizeSawtooth(float * outputBuffer, float * modulatorBuffer,
-		unsigned int bufferLength);
+	void synthesizeSawtooth(float * outputBuffer, float * modulatorBuffer);
 
-	void synthesizePulseWave(float * outputBuffer, float * modulatorBuffer,
-		unsigned int bufferLength);
+	void synthesizePulseWave(float * outputBuffer, float * modulatorBuffer);
 
-	void applyAmplitudeModulation(float * outputBuffer, float * modulatorBuffer,
-			unsigned int bufferLength);
+	void applyAmplitudeModulation(float * outputBuffer,
+		float * modulatorBuffer);
 
 };
 

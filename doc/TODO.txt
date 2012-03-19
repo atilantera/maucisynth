@@ -1,8 +1,19 @@
 Tehtävää aika- ja riippuvuusjärjestyksessä:
 
 1. Luokka MainOscillator:
-   seuraavaksi amplitudimodulaatio ja sen testaus (siniaallolla testaus
-   riittää, koska amplitudimodulaatio on kaikille aaltomuodoille sama).
+   Poista syntetisointifunktioista bufferLength -parametri: laita se
+   Oscillator-luokan protected-kentäksi!
+
+   Muuta taulukoiden läpikäynti pointtereilla taulukkoindekseiksi!
+   Kyllä GCC osaa optimoida. Taulukkoindeksit ja viittaukset ovat
+   turvallisempia kuin pointterit, koska niillä ei voi vahingossa peukaloida
+   muistia taulukon ulkopuolelta.
+   
+   Syntetisointifunktioille voi antaa pointterin sijasta taulukon:
+   syntetisoi(float[] outputBuffer)
+   Tällöinkin välittyy itse asiassa pointteri, mutta koska kyseessä on
+   taulukko, niin taulukon ulkopuolelle osoittaminen tulee selvemmin esille
+   kuin pointtereilla.
    
    Verhokäyrä.
       

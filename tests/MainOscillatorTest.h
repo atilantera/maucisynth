@@ -29,7 +29,7 @@ public:
 private:
 	float * outputBuffer;
 	float * modulatorBuffer;
-	unsigned int bufferLength;
+	unsigned int testBufferLength;
 
 	std::ofstream testFile;
 
