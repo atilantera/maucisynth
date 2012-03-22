@@ -1,0 +1,24 @@
+Requirements for maucisynth
+
+User requirements
+-----------------
+1. User should be able to learn to use the synthesizer just by trying
+   out different settings.
+   
+2. User should be able to play the synthesizer right when the program has
+   started. (There must not be need to learn which part has to be connected
+   and where.)
+   
+Preliminary knowledge: user must know
+* how to connect synthesizer to JACK
+*
+
+
+
+System requirements
+-------------------
+1. Low CPU load even with maximum number of notes playing and at any
+   synthesizer parameter combination.
+
+2. No cracking or other extra sounds when the parameters are changed AND
+   some notes are played.

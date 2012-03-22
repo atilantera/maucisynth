@@ -50,6 +50,8 @@ void MainOscillatorTest::testAll()
 	testFrequencyModulation(false);
 	testAmplitudeModulation(false);
 	testPulseWidthModulation(false);
+	testAdsrCurve(false);
+	testFastMute(true);
 }
 
 void MainOscillatorTest::finishTesting()
@@ -298,6 +300,91 @@ void MainOscillatorTest::testPulseWidthModulation(bool generateOutput)
 	}
 }
 
+void MainOscillatorTest::testAdsrCurve(bool generateOutput)
+{
+	unsigned int i;
+	samplerate = testBufferLength;
+	Oscillator::setBufferLength(testBufferLength);
+	modulation = NONE;
+
+	setAttack(250);
+	setDecay(250);
+	setSustain(0.5);
+	setRelease(500);
+
+	setWaveform(PULSE);
+	setFrequency(16);
+	envelopePhase = ATTACK;
+	previousEnvelopePhase = OFF;
+	envelopePhaseTime = 0;
+
+	bool noteFinished;
+	generateSound(outputBuffer, modulatorBuffer, noteFinished);
+	if (noteFinished == true) {
+		std::cout << "MainOscillatorTest::testAdsrCurve: "
+			"after first buffer noteFinished == true!" << std::endl;
+		return;
+	}
+	if (envelopePhase != SUSTAIN) {
+		std::cout << "MainOscillatorTest::testAdsrCurve: "
+			"after first buffer envelopePhase != SUSTAIN!" << std::endl;
+		return;
+	}
+	if (generateOutput) {
+		testFile << "Pulse wave with Adsr curve. Attack = " <<
+			testBufferLength / 4 << " samples, Decay = " <<
+			testBufferLength / 4 << " samples, Sustain = 50%, "
+			"Release = " << testBufferLength / 2 << " samples" << std::endl;
+		for (i = 0; i < testBufferLength; i++) {
+			testFile << outputBuffer[i] << std::endl;
+		}
+	}
+
+	envelopePhase = RELEASE;
+	previousEnvelopePhase = SUSTAIN;
+
+	generateSound(outputBuffer, modulatorBuffer, noteFinished);
+	if (noteFinished == false) {
+		std::cout << "MainOscillatorTest::testAdsrCurve: "
+			"after second buffer noteFinished == false!" << std::endl;
+		return;
+	}
+	if (envelopePhase != OFF) {
+		std::cout << "MainOscillatorTest::testAdsrCurve: "
+			"after second buffer envelopePhase != OFF!" << std::endl;
+		return;
+	}
+	if (generateOutput) {
+		for (i = 0; i < testBufferLength; i++) {
+			testFile << outputBuffer[i] << std::endl;
+		}
+	}
+
+}
+
+void MainOscillatorTest::testFastMute(bool generateOutput)
+{
+	unsigned int i;
+	bool noteFinished;
+	samplerate = testBufferLength;
+	Oscillator::setBufferLength(testBufferLength);
+	lastSample = -1;
+	muteFast();
+	generateSound(outputBuffer, modulatorBuffer, noteFinished);
+
+	if (generateOutput) {
+		testFile << "Fast mute from value -1 to zero." << std::endl;
+		for (i = 0; i < testBufferLength; i++) {
+			testFile << outputBuffer[i] << std::endl;
+		}
+	}
+
+	if (envelopePhase != OFF) {
+		std::cout << "MainOscillatorTest::testFastMute: "
+			"after generateSound() envelopePhase != OFF!" << std::endl;
+	}
+}
+
 bool MainOscillatorTest::initTestData()
 {
 	unsigned int i;
@@ -359,3 +446,5 @@ bool MainOscillatorTest::initTestData()
 
 	return true;
 }
+
+

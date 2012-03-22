@@ -7,6 +7,11 @@
 
 #include "MainOscillator.h"
 
+// curve steepness in envelope curve
+const float steepness = 4;
+
+const int muteLength = 16;
+
 MainOscillator::MainOscillator()
 {
 	waveform = SINE;
@@ -16,14 +21,15 @@ MainOscillator::MainOscillator()
 	envelopePhase = OFF;
 	previousEnvelopePhase = OFF;
 	envelopeAmplitude = 0;
-	attack = 100;
-	decay = 100;
-	sustain = 50;
-	release = 500;
+	attackTime = samplerate / 100;
+	decayTime = samplerate / 100;
+	sustainVolume = 50;
+	releaseTime = samplerate / 2;
 	key = 0;
 	peakAmplitude = 0;
-	phaseTime = 0;
+	envelopePhaseTime = 0;
 	pulseWidth = 0.5;
+	lastSample = 0;
 }
 
 MainOscillator::~MainOscillator() {
@@ -65,6 +71,39 @@ void MainOscillator::setModulationAmount(float a)
 	}
 }
 
+// Sets length of attack phase of envelope curve in milliseconds
+void MainOscillator::setAttack(unsigned int a)
+{
+	if (a > 5 && a < 10000) {
+		attackTime = a * samplerate / 1000;
+	}
+}
+
+// Sets length of decay phase of envelope curve in milliseconds
+void MainOscillator::setDecay(unsigned int d)
+{
+	if (d > 5 && d < 10000) {
+		decayTime = d * samplerate / 1000;
+	}
+
+}
+
+// Sets relative volume (0..1) of sustain phase of envelope curve
+void MainOscillator::setSustain(float s)
+{
+	if (0 <= s && s <= 1) {
+		sustainVolume = s;
+	}
+}
+
+// Sets length of release phase of envelope curve in milliseconds
+void MainOscillator::setRelease(unsigned int r)
+{
+	if (r > 5 && r < 10000) {
+		releaseTime = r * samplerate / 1000;
+	}
+}
+
 // Sets oscillator base frequency and maximum amplitude.
 // Sets envelope curve to the beginning of attack phase.
 void MainOscillator::noteOn(unsigned char noteKey, unsigned char noteVelocity)
@@ -77,7 +116,7 @@ void MainOscillator::noteOn(unsigned char noteKey, unsigned char noteVelocity)
 	setFrequency(baseFrequency[noteKey]);
 
 	key = noteKey;
-	phaseTime = 0;
+	envelopePhaseTime = 0;
 
 	if (noteVelocity > 127) {
 		noteVelocity = 127;
@@ -91,6 +130,13 @@ void MainOscillator::noteOff()
 	// TODO
 }
 
+// Sets envelope curve to fast mute: interpolation from last sample
+// value to zero.
+void MainOscillator::muteFast()
+{
+	envelopePhase = FAST_MUTE;
+}
+
 // Generates a sound of an oscillator.
 // outputBuffer = buffer for sound output
 // modulatorBuffer = sound of a low frequency oscillator
@@ -100,6 +146,12 @@ void MainOscillator::noteOff()
 void MainOscillator::generateSound(float outputBuffer[],
 const float modulatorBuffer[], bool & noteFinished)
 {
+	if (envelopePhase == FAST_MUTE) {
+		applyFastMute(outputBuffer);
+		noteFinished = true;
+		return;
+	}
+
 	switch (waveform) {
 	case SINE:
 	case TRIANGLE:
@@ -118,7 +170,7 @@ const float modulatorBuffer[], bool & noteFinished)
 		applyAmplitudeModulation(outputBuffer, modulatorBuffer);
 	}
 
-	// TODO: applyEnvelope. use peakAmplitude with it!
+	applyEnvelope(outputBuffer);
 
 	noteFinished = (envelopePhase == OFF);
 }
@@ -237,4 +289,167 @@ const float modulatorBuffer[])
     for (unsigned int i = 0; i < bufferLength; i++) {
        outputBuffer[i] *= lfoMidpoint + lfoAmount * modulatorBuffer[i];
     }
+}
+
+void MainOscillator::applyEnvelope(float outputBuffer[])
+{
+	unsigned int i = 0;
+
+	while (i < bufferLength) {
+		switch (envelopePhase) {
+
+		case OFF:
+			for (; i < bufferLength; i++) {
+				outputBuffer[i] = 0;
+			}
+			break;
+
+		case ATTACK:
+			i = applyAttack(outputBuffer, i);
+			break;
+
+		case DECAY:
+			i = applyDecay(outputBuffer, i);
+			break;
+
+		case SUSTAIN:
+			for (; i < bufferLength; i++) {
+				outputBuffer[i] *= sustainVolume;
+			}
+			break;
+
+		case RELEASE:
+			i = applyRelease(outputBuffer, i);
+			break;
+
+		case FAST_MUTE:
+			// This is done in generateSound().
+			break;
+
+		}
+	}
+
+	lastSample = outputBuffer[bufferLength - 1];
+
+	// TODO: fast mute here?
+	// (like in synth.c/apply_envelope_exp)
+}
+
+unsigned int MainOscillator::applyAttack(float outputBuffer[], unsigned int i)
+{
+	unsigned int samplesLeft = attackTime - envelopePhaseTime;
+	float relativeTime = (float)envelopePhaseTime / attackTime;
+	float timeIncrease = 1.0 / (attackTime - 1);
+	float b = 1 / (1 - expf(-steepness));
+	float amplitude;
+
+	if (samplesLeft > bufferLength) {
+		for (; i < bufferLength; i++) {
+			amplitude = b * (1 - expf(-steepness * relativeTime));
+			outputBuffer[i] *= amplitude;
+			relativeTime += timeIncrease;
+		}
+		envelopePhaseTime += bufferLength;
+	}
+	else {
+		unsigned int endI = i + samplesLeft;
+		for (; i < endI; i++) {
+			amplitude = b * (1 - expf(-steepness * relativeTime));
+			outputBuffer[i] *= amplitude;
+			relativeTime += timeIncrease;
+		}
+		envelopePhase = DECAY;
+		previousEnvelopePhase = ATTACK;
+		envelopePhaseTime = 0;
+	}
+	envelopeAmplitude = amplitude;
+
+	return i;
+}
+
+unsigned int MainOscillator::applyDecay(float outputBuffer[], unsigned int i)
+{
+	unsigned int samplesLeft = decayTime - envelopePhaseTime;
+	float relativeTime = (float)envelopePhaseTime / decayTime;
+	float timeIncrease = 1.0 / (decayTime - 1);
+	float b = 1 / (expf(-steepness) - 1);
+	float amplitude;
+
+	if (samplesLeft > bufferLength) {
+		envelopePhaseTime += bufferLength - i;
+		for (; i < bufferLength; i++) {
+			amplitude = 1 - (1 - sustainVolume) * b
+				* (expf(-steepness * relativeTime) - 1);
+			outputBuffer[i] *= amplitude;
+			relativeTime += timeIncrease;
+		}
+	}
+	else {
+		unsigned int endI = i + samplesLeft;
+		for (; i < endI; i++) {
+			amplitude = 1 - (1 - sustainVolume) * b
+				* (expf(-steepness * relativeTime) - 1);
+			outputBuffer[i] *= amplitude;
+			relativeTime += timeIncrease;
+		}
+		envelopePhase = SUSTAIN;
+		previousEnvelopePhase = ATTACK;
+		envelopePhaseTime = 0;
+	}
+	envelopeAmplitude = amplitude;
+
+	return i;
+}
+
+unsigned int MainOscillator::applyRelease(float outputBuffer[], unsigned int i)
+{
+	unsigned int samplesLeft = releaseTime - envelopePhaseTime;
+	float relativeTime = (float)envelopePhaseTime / releaseTime;
+	float timeIncrease = 1.0 / releaseTime;
+	float b = 1 / (expf(-steepness) - 1);
+	float amplitude;
+
+	if (previousEnvelopePhase != RELEASE) {
+		envelopePhaseTime = 0;
+		previousEnvelopePhase = RELEASE;
+	}
+
+	if (samplesLeft > bufferLength) {
+		envelopePhaseTime += bufferLength - i;
+		for (; i < bufferLength; i++) {
+			amplitude = sustainVolume -
+				sustainVolume * b * (expf(-steepness * relativeTime) - 1);
+			outputBuffer[i] *= amplitude;
+			relativeTime += timeIncrease;
+		}
+	}
+	else {
+		unsigned int endI = i + samplesLeft;
+		for (; i < endI; i++) {
+			amplitude = sustainVolume -
+				sustainVolume * b * (expf(-steepness * relativeTime) - 1);
+			outputBuffer[i] *= amplitude;
+			relativeTime += timeIncrease;
+		}
+		envelopePhase = OFF;
+		envelopePhaseTime = 0;
+	}
+
+	return i;
+}
+
+void MainOscillator::applyFastMute(float outputBuffer[])
+{
+	unsigned int i;
+	unsigned int turnOffLength = muteLength;
+	if (turnOffLength > bufferLength) {
+		turnOffLength = bufferLength;
+	}
+	for (i = 0; i < turnOffLength; i++) {
+		outputBuffer[i] = (turnOffLength - i) * lastSample / turnOffLength;
+	}
+	for (; i < bufferLength; i++) {
+		outputBuffer[i] = 0;
+	}
+	envelopePhase = OFF;
 }

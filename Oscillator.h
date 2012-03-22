@@ -36,12 +36,10 @@ protected:
 	void generateWaveTables();
 	void generateBaseFrequencies();
 
-	// Value of the last sample played.
-	// If the note of the oscillator ends in Attack or Decay phases,
-	// the current peak amplitude is not sustain * peakAmplitude.
-	float lastSample;
-
+	// Oscillator base frequency is in Hz (cycles per second).
 	float frequency;
+
+	// Pulse width is used with pulse wave only. 0 <= pulseWidth <= 1.
 	float pulseWidth;
 
 	// angle is amount of oscillator cycle, 0..1.

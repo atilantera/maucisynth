@@ -23,7 +23,6 @@ Oscillator::Oscillator() {
 		generateBaseFrequencies();
 		staticDataInitialized = true;
 	}
-	lastSample = 0;
 	frequency = 1;
 	pulseWidth = 0.5;
 	angle = 0;

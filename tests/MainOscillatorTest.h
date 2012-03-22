@@ -25,6 +25,8 @@ public:
 	void testFrequencyModulation(bool generateOutput);
 	void testAmplitudeModulation(bool generateOutput);
 	void testPulseWidthModulation(bool generateOutput);
+	void testAdsrCurve(bool generateOutput);
+	void testFastMute(bool generateOutput);
 
 private:
 	float * outputBuffer;
