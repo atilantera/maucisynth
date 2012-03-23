@@ -18,7 +18,7 @@
 
 #include <pthread.h>
 #include "tests/testing.h"
-#include "Synthesizer.h"
+#include "SynthParameters.h"
 
 #define GUI_TESTING
 #include <iostream>

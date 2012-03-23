@@ -1,10 +1,9 @@
 Tehtävää aika- ja riippuvuusjärjestyksessä:
 
-1. Luokka MainOscillator: Verhokäyrä periaatteessa valmis.
-   Testaa vielä koskettimen vapautus, kun envelope on attack- tai decay-
-   vaiheessa.
 
-2. Synthesizer-luokan alkua?
+1. Synthesizer-luokka
+   Toteuta vielä: jack_set_sample_rate_callback
+
    Kolme äänisynteesipuskuria Synthesizerissä riittää:
    1. LFO:n ääni. Jos LFO:n taajuus on kiinteä, niin LFO:n ääni on kaikille
       MainOscillatoreille sama. Silloin LFO tarvitsee laskea vain kerran.
