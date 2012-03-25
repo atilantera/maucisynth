@@ -16,6 +16,8 @@
 #include "MainOscillator.h"
 #include "SynthParameters.h"
 
+const unsigned int POLYPHONY = 32;
+
 class Synthesizer {
 public:
 	Synthesizer(EventBuffer & b);
@@ -24,11 +26,7 @@ public:
 	bool isActive();
 
 private:
-	// Since the synthesizer is monotimbral, all the main oscillators have
-	// the same waveform and LFO modulation type
-	WaveformType waveform;
-	LfoModulationTarget modulation;
-
+	// JACK I/O
 	jack_port_t * jackOutputPort;
 	jack_client_t * jackClient;
 	bool jackIsRunning;
@@ -36,13 +34,29 @@ private:
 	unsigned int samplerate;
 	unsigned int bufferLength;
 
-	static int jackCallback(jack_nframes_t nframes, void * arg);
-
-
-
+	// EventBuffer stores messages from GUI
 	EventBuffer & events;
 
+	float * oscillatorBuffer;
+	float * lfoBuffer;
+
+	MainOscillator * oscillatorTable[POLYPHONY];
+	LowFrequencyOscillator * lfoTable[POLYPHONY];
+
+	void initJack();
+	static int jackCallback(jack_nframes_t nframes, void * arg);
+	static int updateSamplerate(jack_nframes_t nframes, void *arg);
+	static int updateBufferLength(jack_nframes_t nframes, void *arg);
+
 	void generateSound(jack_nframes_t nframes);
+
+	void processEvents();
+	void processNoteOn(unsigned char key, unsigned char velocity,
+		unsigned char noteSource);
+	void processNoteOff(unsigned char key, unsigned char noteSource);
+	void processFastMute(unsigned char noteSource);
+	void processParameterChange(unsigned int parameter,
+		unsigned int parameterValue);
 
 };
 

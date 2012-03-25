@@ -58,7 +58,7 @@ public:
 
 	void addParameterChange(unsigned char controller, unsigned short value);
 
-	unsigned char * swapBuffers(int * dataLength);
+	unsigned char * swapBuffers(unsigned int * dataLength);
 
 private:
 	pthread_mutex_t bufferLock;

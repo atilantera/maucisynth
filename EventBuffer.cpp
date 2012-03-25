@@ -120,8 +120,7 @@ unsigned short value) {
 // Swaps roles of receiving and interpreted buffers.
 // returns: pointer to buffer that should be interpreted
 // parameter bufferUsed returns length of data in the buffer
-unsigned char * EventBuffer::swapBuffers(int * dataLength)
-{
+unsigned char * EventBuffer::swapBuffers(unsigned int * dataLength) {
 	unsigned char * nextProcessedBuffer;
 	pthread_mutex_lock(&bufferLock);
 	*dataLength = bufferUsed;

@@ -7,10 +7,10 @@ RM=rm -f
 all: main
 	cd tests && make && cd ..
 	
-main: EventBuffer.o main.o LowFrequencyOscillator.o MainOscillator.o \
-	Oscillator.o Synthesizer.o SynthGui.o
-	$(LD) $(LIBS) EventBuffer.o main.o LowFrequencyOscillator.o \
-	MainOscillator.o Oscillator.o Synthesizer.o SynthGui.o \
+main: EventBuffer.o main.o KeyValueSet.o LowFrequencyOscillator.o \
+	MainOscillator.o Oscillator.o Synthesizer.o SynthGui.o ValueSet.o
+	$(LD) $(LIBS) EventBuffer.o main.o KeyValueSet.o LowFrequencyOscillator.o \
+	MainOscillator.o Oscillator.o Synthesizer.o SynthGui.o ValueSet.o \
 	-o maucisynth
 
 EventBuffer.o: EventBuffer.cpp EventBuffer.h tests/testing.h
@@ -18,6 +18,9 @@ EventBuffer.o: EventBuffer.cpp EventBuffer.h tests/testing.h
 
 main.o: main.cpp
 	$(CC) $(CFLAGS) -o main.o -c main.cpp
+
+KeyValueSet.o: KeyValueSet.h KeyValueSet.cpp
+	$(CC) $(CFLAGS) -o KeyValueSet.o -c KeyValueSet.cpp
 
 LowFrequencyOscillator.o: LowFrequencyOscillator.cpp LowFrequencyOscillator.h
 	$(CC) $(CFLAGS) -o LowFrequencyOscillator.o -c LowFrequencyOscillator.cpp
@@ -33,6 +36,9 @@ Synthesizer.o: Synthesizer.cpp Synthesizer.h SynthParameters.h
 
 SynthGui.o: SynthGui.cpp SynthGui.h
 	$(CC) $(CFLAGS) -o SynthGui.o -c SynthGui.cpp
+
+ValueSet.o: ValueSet.h ValueSet.cpp
+	$(CC) $(CFLAGS) -o ValueSet.o -c ValueSet.cpp
 
 clean:
 	$(RM) *.o

@@ -1,8 +1,97 @@
 Tehtävää aika- ja riippuvuusjärjestyksessä:
 
+1. Luokat ValueSet ja KeyValueSet
+   * Käyttötarkoitus:
+     1. lista vapaista oskillaattoreista        
+     2. lista soivista oskillaattoreista, nuottilähde GUI
+     3. lista soivista oskillaattoreista, nuottilähde MIDI      
+   * toteutus: kiinteän kokoinen taulukko (koko = synan polyfonia)
+   * listan EI tarvitse olla järjestyksessä, joten saadaan lisäys ja poisto
+     vakioajassa/olio seuraavalla menettelyllä (parempi kuin STL:n vector!):
+     Lisäys taulukon seuraavaan vapaaseen paikkaan:
+        taulukko[kaytossa++] = lisattavaArvo;
+     Poisto: poistetaan halutun indeksin kohdalta, kopioidaan        
+        taulukko[poistoIndeksi] = taulukko[kaytossa - 1];
+        kaytossa--;
+        (tai paremmin: taulukko[poistoIndeksi] = taulukko[--kaytossa];)
+        
+   Note on -tapahtuma:
+   oskillaattoriIndeksi = vapaat.pop();
+   soivat.push(oskillaattoriIndeksi, kosketin);
+   
+   Note off -tapahtuma:
+   soivat.remove(kosketin);
+   vapaat.push(oskillaattoriIndeksi);
+   
+   All notes off -tapahtuma:
+   while (guiNuotit.size() != 0) {
+       oskillaattoriIndeksi = guiNuotit.pop();
+       vapaat.push(oskillaattoriIndeksi);
+   }
+   
+   Vapaat oskillaattorit tallennetaan ValueSet-olioon.
+   Soivat oskillaattorit tallennetaan KeyValueSet-olioon.
+   
+   Luokka FixedIndexMap periytyy luokasta FixedIndexSet.
+   FixedIndexMapissa tallennetaan kosketin-oskillaattoriIndeksi-arvopareja.
+   Kosketin toimii avaimena. Käytännössä FixedIndexMap sisältää
+   unsigned short indexOfKey[256] -taulukon, jossa arvo 0..255 tarkoittaa
+   indeksiä FixedIndexSet.valueTablessa ja 256 tarkoittaa, että kyseistä
+   avainta ei ole tässä listassa.
+   
+   
+   Pointteritoteuksen hyvät ja huonot puolet:
+   + päästään hieman nopeammin käsiksi
+   - vain mainOscillatorien pointtereita. Kun lfo moduloi
+   - sitten tulevaisuudessa, kun useampi mainOscillator per nuotti, niin
+     pitäisi tallentaa pointteriryhmiä. Kuulostaa vaivalloiselta 
+   
+   int- tai unsigned char -toteutuksen hyvät ja huonot puolet
+   + tilansäästö: indeksit 0-255 riittävät hyvin, silloin unsigned char
+     riittäisi
+   + ei turhaa, vaarallista pointteriräpläystä
+   + helpompi debuggaus
+   - indeksi täytyy muuntaa vielä pointteriksi oskillaattoriolioon
+   
+3. Synthesizer-luokka
+   - Sopivat tietorakenteet oskillaattoreille
 
-1. Synthesizer-luokka
-   Toteuta vielä: jack_set_sample_rate_callback
+   1. Jono: vapaat oskillaattorit
+      Toteutus: STL:n deque. Toisaalta jonon maksimipituus tiedetään, ja
+      jonoon tallennetaan pointtereita oskillaattoreihin tai indeksejä,
+      joten jonon voisi toteuttaa taulukkona. Jonon sisältö kuitenkin vaihtuu
+      nopeasti, joten kiinteä taulukkototeutus ei fragmentoisi muistia.
+      
+      
+   2. Lista: soivat oskillaattorit, joiden nuottilähde on GUI
+   3. Lista: soivat oskillaattorit, joiden nuottilähde on MIDI
+      Tässäkin kiinteä taulukkokoteutus olisi hyvä.
+
+
+   Huom! Tallenna vapaat oskillaattorit jonona. Käytännön toteutus voi
+   olla taulukko tai STL:n jono. On tehottomampaa käydä läpi kaikki
+   oskillaattorit etsien ensimmäistä vapaata aina, kun tulee uusi nuotti.
+   (Tämän takia synth.c:n muuttujaa osc_mute ei enää tarvita.)
+   
+   Huom! Tehokasta note offia varten pitää tehdä taulukot
+   MainOscillator * GuiNotes[128]; ja
+   MainOscillator * MidiNotes[128];
+   Indeksinä on suoraan nuotin koskettimen numero (MIDI-numeroinnilla).
+   Kun tulee note off, niin note offin lähteestä (Gui, MIDI) riippuen
+   tsekataan jommastakummasta taulukosta oikea MainOscillator.
+   Kun tulee all notes off, niin on ihan riittävän nopeaa käydä 128
+   nuotin taulukko läpi (Tällaista erikoistapausta varten ei yksinään kannata
+   tehdä listaa kummankin nuottilähteen soivista oskillaattoreista.)
+
+   - metodit processNoteOn, processNoteOff, processFastMute.
+   - metodi processParameterChange
+       - Eri parametreja on paljon. Kannattaako tehdä arvon haarukointi
+         pitkän switch-lauseen sijaan?
+         
+   - äänentuottometodi
+     
+
+   
 
    Kolme äänisynteesipuskuria Synthesizerissä riittää:
    1. LFO:n ääni. Jos LFO:n taajuus on kiinteä, niin LFO:n ääni on kaikille
@@ -24,35 +113,8 @@ Tehtävää aika- ja riippuvuusjärjestyksessä:
    C-version synth.c:n handle_parameter_change():ssa voisi yhden jättimäisen
    switch-lauseen sijasta tehdä haarukointeja SynthGui::buttonSelectin tapaan.
 
-   Huom! Tallenna vapaat oskillaattorit jonona. Käytännön toteutus voi
-   olla taulukko tai STL:n jono. On tehottomampaa käydä läpi kaikki
-   oskillaattorit etsien ensimmäistä vapaata aina, kun tulee uusi nuotti.
-   (Tämän takia synth.c:n muuttujaa osc_mute ei enää tarvita.)
-   
-   Huom! Tehokasta note offia varten pitää tehdä taulukot
-   MainOscillator * GuiNotes[128]; ja
-   MainOscillator * MidiNotes[128];
-   Indeksinä on suoraan nuotin koskettimen numero (MIDI-numeroinnilla).
-   Kun tulee note off, niin note offin lähteestä (Gui, MIDI) riippuen
-   tsekataan jommastakummasta taulukosta oikea MainOscillator.
-   Kun tulee all notes off, niin on ihan riittävän nopeaa käydä 128
-   nuotin taulukko läpi (Tällaista erikoistapausta varten ei yksinään kannata
-   tehdä listaa kummankin nuottilähteen soivista oskillaattoreista.)
 
-7. luokka JackInterface
-   TÄRKEÄÄ: Jackissa on kaksi puskuria. Jos oikein muistan, niin toista
-   Jack soittaa ja toiseen syna saa generoida ääntä. Tarvitaanko lainkaan
-   puskurin kopiointia memcpy():lla synth.c:n synth_load_buffer()in tapaan?
-
-   * katso callbackien toteutuksesta mallia SynthGui-luokasta
-   * paitsi että tässä toteutus suoraan staattiseen
-     callbackiin nopeuden vuoksi (siis ei niin, että staattinen
-     callbacki vielä kutsuu oliokohtaista kääremetodia)
-   * analysoi vielä varmuuden vuoksi, että JACKin kutsuketju
-     oikein (JACK tarvitsee dataa -> välitetään viimeksi
-     generoitu -> annetaan syntetisaattorisäikeelle signaali,
-     että voi lähteä generoimaan seuraavaa puskurillista)
-   
+  
 8. luokka Filter
    
 9. Optimointia: kannattaako oskillaattorin äänisynteesi laittaa inlineksi?

@@ -1,0 +1,60 @@
+Design of maucisynth
+
+1. Oscillators and notes
+------------------------
+Polyphony: the synthesizer can play N notes simultaneously. N = const
+POLYPHONY at Synthesizer.h.
+
+For each note there is an _oscillator group_. There are N oscillator groups in
+the synthesizer. Each oscillator group consists of:
+    - 1 MainOscillator (which produces sound)
+    - 1 LowFrequencyOscillator (which may modulate the MainOscillator)
+
+    Comment: Oscillator groups are analogous to piano strings or pipes in a
+    pipe organ.
+    
+The synthesizer can receive notes from two _note sources_: GUI and MIDI.
+GUI sends notes when the user presses alphanumeric keys on the computer
+keyboard. MIDI notes are received from JACK.
+    
+    Comment: The usability of the synthesizer is better if GUI can send notes.
+    When the user adjusts the synthesizer parameters by mouse from the GUI,
+    he or she can easily play some test notes by computer keyboard. For some
+    users, it is not possible to have a MIDI keyboard near the computer mouse.
+    Other users might not have a MIDI keyboard at all. Therefore it is handy
+    to be able to play the synthesizer from the same active GUI window that
+    controls the parameters of the synthesizer.
+    
+Each oscillator group is one of the three states:
+    (a) Free for new note. Envelope curve is in "off" phase.
+    (b) Playing a note, envelope curve is in attack, decay or sustain phase.
+    (c) Ended playing a note, envelope curve is in release phase.
+
+When synthesizer receices a "note on" -message, then:
+    1. If there is an oscillator group which is playing note from the same
+       key as in the "note on" message AND from the same note source (GUI/MIDI),
+       then the new note described by the "note on" message will REPLACE the
+       current note playing.
+    2. Otherwise, a free oscillator group is used for the new note.
+    
+    Comment: This means that notes from the GUI and MIDI will be treated as
+    separate notes: their key presses and releases won't mix. On the other
+    hand, fastly repeating notes (like tremolo or continuous arpeggio)
+    re-trigger the same oscillator group: newer note always replaces the older
+    one.
+    
+         
+        
+
+2. Thread execution process:
+----------------------------
+
+JACK thread:
+1. JACK calls Synthesizer::jackCallback
+2. Synthesizer::jackCallback calls Synthesizer::processEvents
+3. Synthesizer::jackCallback calls Synthesizer::renderSound
+
+GUI thread:
+Gui just waits for events. When something happens, it puts the events
+into EventBuffer, where Synthesizer will them later.
+   
