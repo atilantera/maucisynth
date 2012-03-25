@@ -21,11 +21,6 @@ Synthesizer::Synthesizer(EventBuffer & b): events(b)
 	oscillatorBuffer = NULL;
 	lfoBuffer = NULL;
 
-	initJack();
-	if(!jackIsRunning) {
-		return;
-	}
-
 	oscillatorBuffer = new float[bufferLength];
 	lfoBuffer = new float[bufferLength];
 
@@ -33,6 +28,8 @@ Synthesizer::Synthesizer(EventBuffer & b): events(b)
 		oscillatorTable[i] = new MainOscillator();
 		lfoTable[i] = new LowFrequencyOscillator();
 	}
+
+	initJack();
 }
 
 Synthesizer::~Synthesizer() {

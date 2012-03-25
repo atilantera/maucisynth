@@ -6,10 +6,10 @@ int main(int argc, char ** argv)
 {
 	gtk_init(&argc, &argv);
 	EventBuffer eventBuffer;
-	SynthGui gui(eventBuffer);
 	Synthesizer synth(eventBuffer);
 
 	if (synth.isActive()) {
+		SynthGui gui(eventBuffer);
 		gtk_main();
 	}
 
