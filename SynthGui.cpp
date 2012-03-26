@@ -46,10 +46,28 @@ SynthGui::SynthGui(EventBuffer & eventBuffer) :
 	createLfo1Controls();
 	createOscillator1Controls();
 
+	endExecutionRegistered = false;
+
 	gtk_widget_show_all(mainWindow);
 }
 
 SynthGui::~SynthGui() {
+}
+
+// Terminates execution of GUI.
+// This is used by class Synthesizer in fatal exceptions.
+void SynthGui::endExecution()
+{
+	if (endExecutionRegistered == false) {
+		std::cout << "SynthGui::endExecution(): terminating GUI" << std::endl;
+		endExecutionRegistered = true;
+		struct timespec timeRequest;
+		struct timespec timeRemaining;
+		timeRequest.tv_sec = 0;
+		timeRequest.tv_nsec = 1000000;
+		nanosleep(&timeRequest, &timeRemaining);
+		gtk_main_quit();
+	}
 }
 
 void SynthGui::createFilterControls() {

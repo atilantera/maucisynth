@@ -5,11 +5,12 @@
 int main(int argc, char ** argv)
 {
 	gtk_init(&argc, &argv);
+
 	EventBuffer eventBuffer;
-	Synthesizer synth(eventBuffer);
+	SynthGui gui(eventBuffer);
+	Synthesizer synth(eventBuffer, gui);
 
 	if (synth.isActive()) {
-		SynthGui gui(eventBuffer);
 		gtk_main();
 	}
 

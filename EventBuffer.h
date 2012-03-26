@@ -42,7 +42,7 @@
  *                      vv = value (16-bit unsigned int)
  */
 
-const unsigned int bufferLength = 256;
+
 
 class EventBuffer {
 public:
@@ -63,15 +63,16 @@ public:
 private:
 	pthread_mutex_t bufferLock;
 
+	unsigned int bufferLength;
+
 	// Two byte tables
-	unsigned char buffer1[bufferLength];
-	unsigned char buffer2[bufferLength];
+	unsigned char * buffer1;
+	unsigned char * buffer2;
 
 	unsigned char * receivingBuffer;
 
 	// How many bytes of receivingBuffer is used
 	unsigned int bufferUsed;
-
 };
 
 #endif /* EVENTBUFFER_H_ */

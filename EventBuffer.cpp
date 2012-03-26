@@ -9,11 +9,17 @@
 
 EventBuffer::EventBuffer() {
 	bufferLock = PTHREAD_MUTEX_INITIALIZER;
+	bufferLength = 256;
+	buffer1 = new unsigned char[bufferLength];
+	buffer2 = new unsigned char[bufferLength];
 	receivingBuffer = buffer1;
 	bufferUsed = 0;
 }
 
-EventBuffer::~EventBuffer() {
+EventBuffer::~EventBuffer()
+{
+	delete [] buffer1;
+	delete [] buffer2;
 }
 
 // Adds "Note on" message to buffer.

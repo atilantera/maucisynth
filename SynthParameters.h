@@ -51,6 +51,6 @@ enum LfoModulationTarget {
 
 enum NoteSource { computerKeyboard = 1, JACK = 2};
 
-const int maxVelocity = 127;
+const unsigned int maxVelocity = 127;
 
 #endif /* SYNTHPARAMETERS_H_ */

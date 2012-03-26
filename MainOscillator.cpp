@@ -25,7 +25,6 @@ MainOscillator::MainOscillator()
 	decayTime = samplerate / 100;
 	sustainVolume = 50;
 	releaseTime = samplerate / 2;
-	key = 0;
 	peakAmplitude = 0;
 	envelopePhaseTime = 0;
 	pulseWidth = 0.5;
@@ -115,7 +114,6 @@ void MainOscillator::noteOn(unsigned char noteKey, unsigned char noteVelocity)
 	lastSample = 0;
 	setFrequency(baseFrequency[noteKey]);
 
-	key = noteKey;
 	envelopePhaseTime = 0;
 
 	if (noteVelocity > 127) {
@@ -127,7 +125,7 @@ void MainOscillator::noteOn(unsigned char noteKey, unsigned char noteVelocity)
 // Sets envelope curve to the beginning of release phase.
 void MainOscillator::noteOff()
 {
-	// TODO
+	envelopePhase = RELEASE;
 }
 
 // Sets envelope curve to fast mute: interpolation from last sample
@@ -452,4 +450,9 @@ void MainOscillator::applyFastMute(float outputBuffer[])
 		outputBuffer[i] = 0;
 	}
 	envelopePhase = OFF;
+}
+
+EnvelopePhase MainOscillator::getEnvelopePhase() const
+{
+	return envelopePhase;
 }

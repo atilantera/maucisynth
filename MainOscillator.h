@@ -16,6 +16,8 @@
 
 #include "tests/testing.h"
 
+enum EnvelopePhase { ATTACK, DECAY, SUSTAIN, RELEASE, OFF, FAST_MUTE };
+
 class MainOscillator : public Oscillator {
 public:
 	MainOscillator();
@@ -37,6 +39,8 @@ public:
 	void generateSound(float outputBuffer[], const float modulatorBuffer[],
 		bool & noteFinished);
 
+	EnvelopePhase getEnvelopePhase() const;
+
 protected:
 
 	// Parameter: base waveform
@@ -54,10 +58,6 @@ protected:
 	float sustainVolume;
 	unsigned int releaseTime;
 
-	// Dynamic parameter: which keyboard key this oscillator is currently
-	// playing
-	unsigned char key;
-
 	// Dynamic parameter: Peak amplitude of the oscillator. MIDI note velocity
 	// determines this. It is coefficent between 0..1.
 	float peakAmplitude;
@@ -67,8 +67,6 @@ protected:
 	// It points to sineTable[] or triangleTable[] or
 	// absSineTable[] in class Oscillator.
 	float * wavetable;
-
-	enum EnvelopePhase { ATTACK, DECAY, SUSTAIN, RELEASE, OFF, FAST_MUTE };
 
 	EnvelopePhase envelopePhase;         // osc_envelope_phase
 	EnvelopePhase previousEnvelopePhase; // osc_precious_envelope_phase

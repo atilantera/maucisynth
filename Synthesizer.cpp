@@ -6,30 +6,42 @@
  */
 
 #include "Synthesizer.h"
+#include <iostream>
 
 Synthesizer * Synthesizer::synthInstance = NULL;
 
-Synthesizer::Synthesizer(EventBuffer & b): events(b)
+Synthesizer::Synthesizer(EventBuffer & b, SynthGui & g): events(b), gui(g)
 {
 	unsigned int i;
 
 	synthInstance = this;
+	synthIsRunning = false;
 	samplerate = 1;
 	bufferLength = 0;
-	jackIsRunning = false;
+	jackCallbackLock = PTHREAD_MUTEX_INITIALIZER;
+	samplerateChanged = false;
+	bufferLengthChanged = false;
 
 	oscillatorBuffer = NULL;
 	lfoBuffer = NULL;
 
+	initJack();
+	Oscillator::setSamplerate(samplerate);
+	Oscillator::setBufferLength(bufferLength);
+
 	oscillatorBuffer = new float[bufferLength];
 	lfoBuffer = new float[bufferLength];
 
+
 	for (i = 0; i < POLYPHONY; i++) {
-		oscillatorTable[i] = new MainOscillator();
-		lfoTable[i] = new LowFrequencyOscillator();
+		oscillator1[i] = new MainOscillator();
+		lfo1[i] = new LowFrequencyOscillator();
 	}
 
-	initJack();
+	if (lfo1[POLYPHONY - 1] == NULL) {
+		std::cout << "Problem in starting the synth: not enough free memory."
+			<< std::endl;
+	}
 }
 
 Synthesizer::~Synthesizer() {
@@ -40,14 +52,14 @@ Synthesizer::~Synthesizer() {
 	delete [] lfoBuffer;
 
 	for (i = 0; i < POLYPHONY; i++) {
-		delete oscillatorTable[i];
-		delete lfoTable[i];
+		delete oscillator1[i];
+		delete lfo1[i];
 	}
 }
 
 bool Synthesizer::isActive()
 {
-	return jackIsRunning;
+	return synthIsRunning;
 }
 
 void Synthesizer::initJack()
@@ -93,23 +105,49 @@ void Synthesizer::initJack()
 	samplerate = jack_get_sample_rate(jackClient);
 	bufferLength = jack_get_buffer_size(jackClient);
 
-
 	if (jack_activate (jackClient) != 0) {
 		std::cout << "Problem in starting the synth: cannot activate "
 			"JACK client" << std::endl;
 		return;
 	}
-	jackIsRunning = true;
+	synthIsRunning = true;
 }
 
 int Synthesizer::jackCallback(jack_nframes_t nframes, void * arg)
 {
 	synthInstance->processEvents();
+	synthInstance->checkJackExceptions();
 	synthInstance->generateSound(nframes);
 	return 0;
 }
 
-inline void Synthesizer::generateSound(jack_nframes_t nframes)
+void Synthesizer::checkJackExceptions()
+{
+	pthread_mutex_lock(&jackCallbackLock);
+	if (samplerateChanged) {
+		Oscillator::setSamplerate(samplerate);
+		samplerateChanged = false;
+
+	}
+	if (bufferLengthChanged) {
+		delete [] oscillatorBuffer;
+		delete [] lfoBuffer;
+		oscillatorBuffer = new float[bufferLength];
+		lfoBuffer = new float[bufferLength];
+		if (oscillatorBuffer == NULL || lfoBuffer == NULL) {
+			std::cout << "Problem: buffer length changed to " <<
+				bufferLength << " samples, but not enough free memory."
+				<< std::endl;
+			gui.endExecution();
+		}
+
+		Oscillator::setBufferLength(bufferLength);
+		bufferLengthChanged = false;
+	}
+	pthread_mutex_unlock(&jackCallbackLock);
+}
+
+void Synthesizer::generateSound(jack_nframes_t nframes)
 {
 	float * outputBuffer =
 		(float *) jack_port_get_buffer(jackOutputPort, nframes);
@@ -117,23 +155,23 @@ inline void Synthesizer::generateSound(jack_nframes_t nframes)
 
 int Synthesizer::updateSamplerate(jack_nframes_t nframes, void *arg)
 {
-	// TODO
-	// samplerate = nframes;
-	std::cout << "Synthesizer: sample rate changed to " << nframes
-		<< std::endl;
-
-	// Returns zero on success
+	if (nframes != synthInstance->samplerate) {
+		pthread_mutex_lock(&(synthInstance->jackCallbackLock));
+		synthInstance->samplerate = nframes;
+		synthInstance->samplerateChanged = true;
+		pthread_mutex_unlock(&(synthInstance->jackCallbackLock));
+	}
 	return 0;
 }
 
 int Synthesizer::updateBufferLength(jack_nframes_t nframes, void *arg)
 {
-	// TODO
-	// bufferLength = nframes;
-	std::cout << "Synthesizer: buffer length changed to " << nframes
-		<< std::endl;
-
-	// Returns zero on success
+	if (nframes != synthInstance->bufferLength) {
+		pthread_mutex_lock(&(synthInstance->jackCallbackLock));
+		synthInstance->bufferLength = nframes;
+		synthInstance->bufferLengthChanged = true;
+		pthread_mutex_unlock(&(synthInstance->jackCallbackLock));
+	}
 	return 0;
 }
 
@@ -143,34 +181,47 @@ void Synthesizer::processEvents()
 	unsigned char * ptr = events.swapBuffers(&dataLength);
 	unsigned char * endPtr = ptr + dataLength;
 
-	unsigned int key, velocity, noteSource, parameterType, parameterValue;
+	unsigned char key, velocity, parameterType;
+	unsigned int parameterValue;
+	NoteSource source;
 
 	while (ptr < endPtr) {
-		switch (*ptr) {
+		switch (*ptr++) {
 
 		case 0x01: /* note on */
-		ptr++;
 		key = *ptr++;
 		velocity = *ptr++;
-		noteSource = *ptr++;
-		processNoteOn(key, velocity, noteSource);
+		if (*ptr++ == JACK) {
+			source = JACK;
+		}
+		else {
+			source = computerKeyboard;
+		}
+		processNoteOn(key, velocity, source);
 		break;
 
 		case 0x02: /* note off */
-		ptr++;
 		key = *ptr++;
-		noteSource = *ptr++;
-		processNoteOff(key, noteSource);
+		if (*ptr++ == JACK) {
+			source = JACK;
+		}
+		else {
+			source = computerKeyboard;
+		}
+		processNoteOff(key, source);
 		break;
 
 		case 0x03: /* all notes off */
-		ptr++;
-		noteSource = *ptr++;
-		processFastMute(noteSource);
+		if (*ptr++ == JACK) {
+			source = JACK;
+		}
+		else {
+			source = computerKeyboard;
+		}
+		processFastMute(source);
 		break;
 
 		case 0x04: /* parameter change */
-		ptr++;
 		parameterType = *ptr++;
 		parameterValue = (*ptr++) << 8;
 		parameterValue += *ptr++;
@@ -182,19 +233,47 @@ void Synthesizer::processEvents()
 }
 
 void Synthesizer::processNoteOn(unsigned char key, unsigned char velocity,
-unsigned char noteSource)
+NoteSource source)
 {
-	// TODO: see handle_messages in synth.c
+	// First try to find and retrigger an oscillator group with the same
+	// note key and note source
+	unsigned int i;
+	for (i = 0; i < POLYPHONY; i++) {
+		if (noteKey[i] == key && noteSource[i] == source &&
+			oscillator1[i]->getEnvelopePhase() != OFF)
+		{
+			oscillator1[i]->noteOn(key, velocity);
+			return;
+		}
+	}
+
+	// Then try to find a free oscillator group
+	for (i = 0; i < POLYPHONY; i++) {
+		if (oscillator1[i]->getEnvelopePhase() == OFF) {
+			oscillator1[i]->noteOn(key, velocity);
+			noteKey[i] = key;
+			noteSource[i] = source;
+			return;
+		}
+	}
 }
 
-void Synthesizer::processNoteOff(unsigned char key, unsigned char noteSource)
+void Synthesizer::processNoteOff(unsigned char key, NoteSource source)
 {
-	// TODO: see handle_messages in synth.c
+	for (unsigned int i = 0; i < POLYPHONY; i++) {
+		if (noteKey[i] == key && noteSource[i] == source) {
+			oscillator1[i]->noteOff();
+		}
+	}
 }
 
-void Synthesizer::processFastMute(unsigned char noteSource)
+void Synthesizer::processFastMute(NoteSource source)
 {
-	// TODO: see handle_messages in synth.c
+	for (unsigned int i = 0; i < POLYPHONY; i++) {
+		if (noteSource[i] == source) {
+			oscillator1[i]->muteFast();
+		}
+	}
 }
 
 void Synthesizer::processParameterChange(unsigned int parameter,

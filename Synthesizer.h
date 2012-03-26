@@ -10,17 +10,20 @@
 
 #include <jack/jack.h>
 #include <jack/thread.h>
+#include <pthread.h>
 
 #include "EventBuffer.h"
 #include "LowFrequencyOscillator.h"
 #include "MainOscillator.h"
+#include "Oscillator.h"
+#include "SynthGui.h"
 #include "SynthParameters.h"
 
-const unsigned int POLYPHONY = 32;
+const unsigned int POLYPHONY = 16;
 
 class Synthesizer {
 public:
-	Synthesizer(EventBuffer & b);
+	Synthesizer(EventBuffer & b, SynthGui & g);
 	~Synthesizer();
 
 	bool isActive();
@@ -29,32 +32,41 @@ private:
 	// JACK I/O
 	jack_port_t * jackOutputPort;
 	jack_client_t * jackClient;
-	bool jackIsRunning;
+	bool synthIsRunning;
 	static Synthesizer * synthInstance;
 	unsigned int samplerate;
 	unsigned int bufferLength;
+	pthread_mutex_t jackCallbackLock;
+	bool samplerateChanged;
+	bool bufferLengthChanged;
 
 	// EventBuffer stores messages from GUI
 	EventBuffer & events;
 
+	// Reference to GUI is needes for SynthGui.endExecution().
+	SynthGui & gui;
+
 	float * oscillatorBuffer;
 	float * lfoBuffer;
 
-	MainOscillator * oscillatorTable[POLYPHONY];
-	LowFrequencyOscillator * lfoTable[POLYPHONY];
+	MainOscillator * oscillator1[POLYPHONY];
+	LowFrequencyOscillator * lfo1[POLYPHONY];
+	NoteSource noteSource[POLYPHONY];
+	unsigned char noteKey[POLYPHONY];
 
 	void initJack();
 	static int jackCallback(jack_nframes_t nframes, void * arg);
 	static int updateSamplerate(jack_nframes_t nframes, void *arg);
 	static int updateBufferLength(jack_nframes_t nframes, void *arg);
 
+	void checkJackExceptions();
 	void generateSound(jack_nframes_t nframes);
 
 	void processEvents();
 	void processNoteOn(unsigned char key, unsigned char velocity,
-		unsigned char noteSource);
-	void processNoteOff(unsigned char key, unsigned char noteSource);
-	void processFastMute(unsigned char noteSource);
+			NoteSource source);
+	void processNoteOff(unsigned char key, NoteSource source);
+	void processFastMute(NoteSource source);
 	void processParameterChange(unsigned int parameter,
 		unsigned int parameterValue);
 

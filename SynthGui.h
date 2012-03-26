@@ -11,8 +11,9 @@
 #ifndef SYNTHGUI_H_
 #define SYNTHGUI_H_
 
+#include <cstdlib>
+#include <ctime>
 #include <pthread.h>
-#include <stdlib.h>
 #include <iostream>
 #include <string>
 #include <gtk-2.0/gdk/gdkkeysyms.h>
@@ -32,6 +33,8 @@ class SynthGui {
 public:
 	SynthGui(EventBuffer & eventBuffer);
 	~SynthGui();
+
+	void endExecution();
 
 private:
 	// Widget creators
@@ -76,7 +79,7 @@ private:
 	GtkWidget * mainFixed;
 
 	int keyTranslations[128];
-
+	bool endExecutionRegistered;
 };
 
 #endif /* SYNTHGUI_H_ */
