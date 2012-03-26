@@ -8,12 +8,14 @@
 #ifndef SYNTHESIZER_H_
 #define SYNTHESIZER_H_
 
+#include <iostream>
 #include <jack/jack.h>
 #include <jack/thread.h>
 #include <pthread.h>
 
 #include "EventBuffer.h"
 #include "LowFrequencyOscillator.h"
+#include "LowpassFilter.h"
 #include "MainOscillator.h"
 #include "Oscillator.h"
 #include "SynthGui.h"
@@ -36,9 +38,9 @@ private:
 	static Synthesizer * synthInstance;
 	unsigned int samplerate;
 	unsigned int bufferLength;
-	pthread_mutex_t jackCallbackLock;
 	bool samplerateChanged;
 	bool bufferLengthChanged;
+	pthread_mutex_t jackCallbackLock;
 
 	// EventBuffer stores messages from GUI
 	EventBuffer & events;
@@ -53,6 +55,12 @@ private:
 	LowFrequencyOscillator * lfo1[POLYPHONY];
 	NoteSource noteSource[POLYPHONY];
 	unsigned char noteKey[POLYPHONY];
+
+	LfoFrequencyType lfo1frequencyType;
+	float lfo1fixedFrequency;
+	float lfo1relativeFrequency;
+
+	LowpassFilter filter;
 
 	void initJack();
 	static int jackCallback(jack_nframes_t nframes, void * arg);
@@ -69,7 +77,6 @@ private:
 	void processFastMute(NoteSource source);
 	void processParameterChange(unsigned int parameter,
 		unsigned int parameterValue);
-
 };
 
 #endif /* SYNTHESIZER_H_ */

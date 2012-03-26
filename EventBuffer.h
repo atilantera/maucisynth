@@ -20,8 +20,9 @@
 #include "tests/testing.h"
 #include "SynthParameters.h"
 
-#define GUI_TESTING
+#ifdef GUI_TESTING
 #include <iostream>
+#endif
 
 /* Data format in EventBuffer.buffer:
  * Buffer contains adjacent messages.

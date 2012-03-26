@@ -7,10 +7,10 @@ RM=rm -f
 all: main
 	cd tests && make && cd ..
 	
-main: EventBuffer.o main.o LowFrequencyOscillator.o \
+main: EventBuffer.o main.o LowFrequencyOscillator.o LowpassFilter.o \
 	MainOscillator.o Oscillator.o Synthesizer.o SynthGui.o 
 	$(LD) $(LIBS) EventBuffer.o main.o LowFrequencyOscillator.o \
-	MainOscillator.o Oscillator.o Synthesizer.o SynthGui.o \
+	LowpassFilter.o MainOscillator.o Oscillator.o Synthesizer.o SynthGui.o \
 	-o maucisynth
 
 EventBuffer.o: EventBuffer.cpp EventBuffer.h tests/testing.h
@@ -21,6 +21,9 @@ main.o: main.cpp
 
 LowFrequencyOscillator.o: LowFrequencyOscillator.cpp LowFrequencyOscillator.h
 	$(CC) $(CFLAGS) -o LowFrequencyOscillator.o -c LowFrequencyOscillator.cpp
+
+LowpassFilter.o: LowpassFilter.cpp LowpassFilter.h
+	$(CC) $(CFLAGS) -o LowpassFilter.o -c LowpassFilter.cpp
 
 MainOscillator.o: MainOscillator.cpp MainOscillator.h
 	$(CC) $(CFLAGS) -o MainOscillator.o -c MainOscillator.cpp

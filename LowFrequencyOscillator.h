@@ -17,10 +17,13 @@ public:
 	virtual ~LowFrequencyOscillator();
 
 	void setModulationTarget(LfoModulationTarget target);
+	void setRelativeFrequency(float mainOscFrequency);
+	void setRelativeFrequencyCoefficent(float c);
 	void generateSound(float buffer[]);
 
 private:
 	LfoModulationTarget modulationTarget;
+	float frequencyCoefficent;
 
 };
 

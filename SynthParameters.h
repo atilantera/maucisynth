@@ -15,6 +15,9 @@
 #ifndef SYNTHPARAMETERS_H_
 #define SYNTHPARAMETERS_H_
 
+// NOTE: If you modify the enum ControllerType, you must also
+// change the method Synthesizer.processParameterChange().
+
 enum ControllerType {
 	OSC1_WAVEFORM           =  0,
 	OSC1_ATTACK             =  1,
@@ -37,6 +40,8 @@ enum WaveformType {
 	ABS_SINE  = 4
 };
 
+const unsigned int maxWaveformType = 4;
+
 enum LfoFrequencyType {
 	FIXED    = 0,
 	RELATIVE = 1
@@ -52,5 +57,32 @@ enum LfoModulationTarget {
 enum NoteSource { computerKeyboard = 1, JACK = 2};
 
 const unsigned int maxVelocity = 127;
+
+const float MinFixedLfoFrequency = 0.1;
+const float MaxFixedLfoFrequency = 50;
+
+const float MinRelativeLfoFrequency = 0.05;
+const float MaxRelativeLfoFrequency = 0.5;
+
+const float MinLfoModulation = 0.01;
+const float MaxLfoModulation = 1;
+
+const unsigned int MinLowpassFrequency = 100;
+const unsigned int MaxLowpassFrequency = 10000;
+
+const unsigned int MinAttackTime = 5;
+const unsigned int MaxAttackTime = 1000;
+
+const unsigned int MinDecayTime  = 5;
+const unsigned int MaxDecayTime  = 1000;
+
+const unsigned int MinSustainVolume = 1;
+const unsigned int MaxSustainVolume = 100;
+
+const unsigned int MinReleaseTime   = 5;
+const unsigned int MaxReleaseTime   = 3000;
+
+
+
 
 #endif /* SYNTHPARAMETERS_H_ */

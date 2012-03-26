@@ -7,6 +7,10 @@
 
 #include "MainOscillator.h"
 
+#ifndef NULL
+#define NULL 0
+#endif
+
 // curve steepness in envelope curve
 const float steepness = 4;
 
@@ -18,13 +22,16 @@ MainOscillator::MainOscillator()
 	wavetable = sineTable;
 	modulation = NONE;
 	modulationAmount = 0;
+	lfoFrequencyType = FIXED;
+	dedicatedLfo = NULL;
+
 	envelopePhase = OFF;
 	previousEnvelopePhase = OFF;
 	envelopeAmplitude = 0;
-	attackTime = samplerate / 100;
-	decayTime = samplerate / 100;
-	sustainVolume = 50;
-	releaseTime = samplerate / 2;
+	attackTime = MinAttackTime;
+	decayTime = MinDecayTime;
+	sustainVolume = MaxSustainVolume;
+	releaseTime = MinReleaseTime;
 	peakAmplitude = 0;
 	envelopePhaseTime = 0;
 	pulseWidth = 0.5;
@@ -57,17 +64,33 @@ void MainOscillator::setWaveform(WaveformType w)
 	}
 }
 
-// Sets LFO modulation target
+// Sets a LowFrequencyOscillator whose relative frequency this
+// MainOscillator changes at "note on" events when frequency type
+// is RELATIVE.
+void MainOscillator::setDedicatedLfo(LowFrequencyOscillator * lfo)
+{
+	dedicatedLfo = lfo;
+}
+
+// Sets modulation target of a LowFrequencyOscillator
 void MainOscillator::setModulationTarget(LfoModulationTarget m)
 {
 	modulation = m;
 }
 
+// Sets modulation amount of a LowFrequencyOscillator
 void MainOscillator::setModulationAmount(float a)
 {
 	if (0 <= a && a <= 1) {
 		modulationAmount = a;
 	}
+}
+
+// Sets frequency type of a LowFrequencyOscillator:
+// FIXED or RELATIVE.
+void MainOscillator::setLfoFrequencyType(LfoFrequencyType t)
+{
+	lfoFrequencyType = t;
 }
 
 // Sets length of attack phase of envelope curve in milliseconds
@@ -120,6 +143,10 @@ void MainOscillator::noteOn(unsigned char noteKey, unsigned char noteVelocity)
 		noteVelocity = 127;
 	}
 	peakAmplitude = (float)noteVelocity / 127;
+
+	if (lfoFrequencyType == RELATIVE && dedicatedLfo != NULL) {
+		dedicatedLfo->setRelativeFrequency(frequency);
+	}
 }
 
 // Sets envelope curve to the beginning of release phase.

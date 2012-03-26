@@ -34,8 +34,6 @@ public:
 	SynthGui(EventBuffer & eventBuffer);
 	~SynthGui();
 
-	void endExecution();
-
 private:
 	// Widget creators
 	void createLfo1Controls();
@@ -79,7 +77,6 @@ private:
 	GtkWidget * mainFixed;
 
 	int keyTranslations[128];
-	bool endExecutionRegistered;
 };
 
 #endif /* SYNTHGUI_H_ */

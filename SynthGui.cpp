@@ -46,28 +46,10 @@ SynthGui::SynthGui(EventBuffer & eventBuffer) :
 	createLfo1Controls();
 	createOscillator1Controls();
 
-	endExecutionRegistered = false;
-
 	gtk_widget_show_all(mainWindow);
 }
 
 SynthGui::~SynthGui() {
-}
-
-// Terminates execution of GUI.
-// This is used by class Synthesizer in fatal exceptions.
-void SynthGui::endExecution()
-{
-	if (endExecutionRegistered == false) {
-		std::cout << "SynthGui::endExecution(): terminating GUI" << std::endl;
-		endExecutionRegistered = true;
-		struct timespec timeRequest;
-		struct timespec timeRemaining;
-		timeRequest.tv_sec = 0;
-		timeRequest.tv_nsec = 1000000;
-		nanosleep(&timeRequest, &timeRemaining);
-		gtk_main_quit();
-	}
 }
 
 void SynthGui::createFilterControls() {
@@ -87,7 +69,8 @@ void SynthGui::createFilterControls() {
     label = gtk_label_new("Lowpass");
 	gtk_fixed_put(GTK_FIXED(fixed), label, 5, 0);
 
-	vscale = gtk_vscale_new_with_range(100, 10000, 50);
+	vscale = gtk_vscale_new_with_range(MinLowpassFrequency,
+			MaxLowpassFrequency, 50);
 	gtk_widget_set_size_request(GTK_WIDGET(vscale), 32, 128);
 	gtk_range_set_inverted(GTK_RANGE(vscale), TRUE);
 	gtk_range_set_update_policy(GTK_RANGE(vscale), GTK_UPDATE_CONTINUOUS);
@@ -134,7 +117,8 @@ void SynthGui::createLfo1Controls() {
 
 	// LFO 1 fixed frequency slider
 	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(button));
-	scale = gtk_hscale_new_with_range(0.1, 50, 0.1);
+	scale = gtk_hscale_new_with_range(MinFixedLfoFrequency,
+			MaxFixedLfoFrequency, 0.1);
 	gtk_widget_set_size_request(GTK_WIDGET(scale), 128, 38);
 	gtk_range_set_update_policy(GTK_RANGE(scale),
 		GTK_UPDATE_CONTINUOUS);
@@ -144,7 +128,8 @@ void SynthGui::createLfo1Controls() {
 	gtk_fixed_put(GTK_FIXED(fixed), scale, 89, 22);
 
 	// LFO 1 relative frequency slider
-	scale = gtk_hscale_new_with_range(0.05, 0.5, 0.05);
+	scale = gtk_hscale_new_with_range(MinRelativeLfoFrequency,
+			MaxRelativeLfoFrequency, 0.05);
 	gtk_widget_set_size_request(GTK_WIDGET(scale), 128, 38);
 	gtk_range_set_update_policy(GTK_RANGE(scale), GTK_UPDATE_CONTINUOUS);
 	g_signal_connect(scale, "value_changed",
@@ -191,7 +176,7 @@ void SynthGui::createLfo1Controls() {
 	// LFO 1 modulation amount
 	label = gtk_label_new("Amount");
 	gtk_fixed_put(GTK_FIXED(fixed), label, 420, 0);
-	scale = gtk_vscale_new_with_range(0.01, 1, 0.01);
+	scale = gtk_vscale_new_with_range(MinLfoModulation, MaxLfoModulation, 0.01);
 	gtk_widget_set_size_request(GTK_WIDGET(scale), 32, 128);
 	gtk_range_set_inverted(GTK_RANGE(scale), TRUE);
 	gtk_range_set_update_policy(GTK_RANGE(scale), GTK_UPDATE_CONTINUOUS);
@@ -266,7 +251,7 @@ void SynthGui::createOscillator1Controls() {
 	label = gtk_label_new("R");
 	gtk_fixed_put(GTK_FIXED(fixed), label, 196, 0);
 
-	slider = gtk_vscale_new_with_range(1, 1000, 5);
+	slider = gtk_vscale_new_with_range(MinAttackTime, MaxAttackTime, 5);
 	gtk_widget_set_size_request(GTK_WIDGET(slider), 32, 128);
 	gtk_range_set_inverted(GTK_RANGE(slider), TRUE);
 	gtk_range_set_update_policy(GTK_RANGE(slider), GTK_UPDATE_CONTINUOUS);
@@ -275,7 +260,7 @@ void SynthGui::createOscillator1Controls() {
 		(gpointer)"osc1attack");
 	gtk_fixed_put(GTK_FIXED(fixed), slider, 90, 20);
 
-	slider = gtk_vscale_new_with_range(1, 1000, 5);
+	slider = gtk_vscale_new_with_range(MinDecayTime, MaxDecayTime, 5);
 	gtk_widget_set_size_request(GTK_WIDGET(slider), 32, 128);
 	gtk_range_set_inverted(GTK_RANGE(slider), TRUE);
 	gtk_range_set_update_policy(GTK_RANGE(slider), GTK_UPDATE_CONTINUOUS);
@@ -294,7 +279,7 @@ void SynthGui::createOscillator1Controls() {
 		(gpointer)"osc1sustain");
 	gtk_fixed_put(GTK_FIXED(fixed), slider, 154, 20);
 
-	slider = gtk_vscale_new_with_range(1, 3000, 30);
+	slider = gtk_vscale_new_with_range(MinReleaseTime, MaxReleaseTime, 30);
 	gtk_widget_set_size_request(GTK_WIDGET(slider), 32, 128);
 	gtk_range_set_inverted(GTK_RANGE(slider), TRUE);
 	gtk_range_set_update_policy(GTK_RANGE(slider), GTK_UPDATE_CONTINUOUS);

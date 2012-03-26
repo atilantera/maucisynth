@@ -19,6 +19,18 @@ void LowFrequencyOscillator::setModulationTarget(LfoModulationTarget target)
 	modulationTarget = target;
 }
 
+// This is related to LfoFrequencyType FIXED, MinRelativeLfoFrequency and
+// MaxRelativeLfoFrequency in SynthParameters.h.
+void LowFrequencyOscillator::setRelativeFrequencyCoefficent(float c)
+{
+	frequencyCoefficent = c;
+}
+
+void LowFrequencyOscillator::setRelativeFrequency(float mainOscFrequency)
+{
+	setFrequency(mainOscFrequency * frequencyCoefficent);
+}
+
 void LowFrequencyOscillator::generateSound(float buffer[]) {
 	// With pulse width modulation, 70% on-pulse / 30% off-pulse sounds
     // the same to the ear as 30% on-pulse / 70% off-pulse.

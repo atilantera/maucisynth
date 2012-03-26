@@ -6,7 +6,6 @@
  */
 
 #include "Synthesizer.h"
-#include <iostream>
 
 Synthesizer * Synthesizer::synthInstance = NULL;
 
@@ -32,6 +31,9 @@ Synthesizer::Synthesizer(EventBuffer & b, SynthGui & g): events(b), gui(g)
 	oscillatorBuffer = new float[bufferLength];
 	lfoBuffer = new float[bufferLength];
 
+	lfo1frequencyType = FIXED;
+
+	filter.setFrequency(MinLowpassFrequency);
 
 	for (i = 0; i < POLYPHONY; i++) {
 		oscillator1[i] = new MainOscillator();
@@ -47,7 +49,9 @@ Synthesizer::Synthesizer(EventBuffer & b, SynthGui & g): events(b), gui(g)
 Synthesizer::~Synthesizer() {
 	unsigned int i;
 
-	jack_client_close(jackClient);
+	if (synthIsRunning) {
+		jack_client_close(jackClient);
+	}
 	delete [] oscillatorBuffer;
 	delete [] lfoBuffer;
 
@@ -135,10 +139,11 @@ void Synthesizer::checkJackExceptions()
 		oscillatorBuffer = new float[bufferLength];
 		lfoBuffer = new float[bufferLength];
 		if (oscillatorBuffer == NULL || lfoBuffer == NULL) {
-			std::cout << "Problem: buffer length changed to " <<
-				bufferLength << " samples, but not enough free memory."
-				<< std::endl;
-			gui.endExecution();
+			std::cout <<  "Problem: buffer length changed, not enough "
+				"free memory." << std::endl;
+			synthIsRunning = false;
+			pthread_mutex_unlock(&jackCallbackLock);
+			jack_client_close(jackClient);
 		}
 
 		Oscillator::setBufferLength(bufferLength);
@@ -235,6 +240,9 @@ void Synthesizer::processEvents()
 void Synthesizer::processNoteOn(unsigned char key, unsigned char velocity,
 NoteSource source)
 {
+	std::cout << "Synthesizer.processNoteOn(" << (int)key << "," <<
+		(int)velocity << "," << (int)source << ")" << std::endl;
+
 	// First try to find and retrigger an oscillator group with the same
 	// note key and note source
 	unsigned int i;
@@ -260,6 +268,8 @@ NoteSource source)
 
 void Synthesizer::processNoteOff(unsigned char key, NoteSource source)
 {
+	std::cout << "Synthesizer.processNoteOff(" << (int)key << "," <<
+		(int)source << ")" << std::endl;
 	for (unsigned int i = 0; i < POLYPHONY; i++) {
 		if (noteKey[i] == key && noteSource[i] == source) {
 			oscillator1[i]->noteOff();
@@ -269,6 +279,8 @@ void Synthesizer::processNoteOff(unsigned char key, NoteSource source)
 
 void Synthesizer::processFastMute(NoteSource source)
 {
+	std::cout << "Synthesizer.processFastMute(" << (int)source << ")" <<
+		std::endl;
 	for (unsigned int i = 0; i < POLYPHONY; i++) {
 		if (noteSource[i] == source) {
 			oscillator1[i]->muteFast();
@@ -279,5 +291,101 @@ void Synthesizer::processFastMute(NoteSource source)
 void Synthesizer::processParameterChange(unsigned int parameter,
 	unsigned int parameterValue)
 {
-	// TODO: apply handle_parameter_change from synth.c
+	unsigned int i;
+	float floatValue;
+
+	std::cout << "Synthesizer.processParameterChange(" << parameter << "," <<
+		parameterValue << ")" << std::endl;
+
+	if (parameter < 5) {
+		switch (parameter) {
+
+		case OSC1_WAVEFORM: // 0
+			if (parameterValue < maxWaveformType) {
+				for (i = 0; i < POLYPHONY; i++) {
+					oscillator1[i]->setWaveform((WaveformType)parameterValue);
+				}
+			}
+			break;
+
+		case OSC1_ATTACK:   // 1
+			for (i = 0; i < POLYPHONY; i++) {
+				oscillator1[i]->setAttack(parameterValue);
+			}
+			break;
+
+		case OSC1_DECAY:    // 2
+			for (i = 0; i < POLYPHONY; i++) {
+				oscillator1[i]->setDecay(parameterValue);
+			}
+			break;
+
+		case OSC1_SUSTAIN:  // 3
+			floatValue = parameterValue * 0.01;
+			for (i = 0; i < POLYPHONY; i++) {
+				oscillator1[i]->setSustain(floatValue);
+			}
+			break;
+
+		case OSC1_RELEASE:  // 4
+			for (i = 0; i < POLYPHONY; i++) {
+				oscillator1[i]->setRelease(parameterValue);
+			}
+			break;
+		}
+	}
+	else {
+		switch (parameter) {
+		case LFO1_FREQUENCY_TYPE:     // 5
+			lfo1frequencyType = (LfoFrequencyType)parameterValue;
+			if (lfo1frequencyType == FIXED) {
+				for (i = 0; i < POLYPHONY; i++) {
+					oscillator1[i]->setLfoFrequencyType(lfo1frequencyType);
+				}
+				lfo1[0]->setFrequency(lfo1fixedFrequency);
+			}
+			else {
+				for (i = 0; i < POLYPHONY; i++) {
+					oscillator1[i]->setLfoFrequencyType(lfo1frequencyType);
+					lfo1[i]->setRelativeFrequencyCoefficent(
+						lfo1relativeFrequency);
+				}
+			}
+			break;
+
+		case LFO1_FIXED_FREQUENCY:    // 6
+			// Perform a lazy change: don't update MainOscillators and
+			// LowFrequencyOscillators until next LFO1_FREQUENCY_TYPE
+			// parameter change.
+			lfo1fixedFrequency = parameterValue * 0.01;
+			break;
+
+		case LFO1_RELATIVE_FREQUENCY: // 7
+			// Perform a lazy change: don't update MainOscillators and
+			// LowFrequencyOscillators until next LFO1_FREQUENCY_TYPE
+			// parameter change.
+			lfo1relativeFrequency = parameterValue * 0.01;
+			break;
+
+		case LFO1_TARGET_TYPE:        // 8
+			for (i = 0; i < POLYPHONY; i++) {
+				lfo1[i]->setModulationTarget(
+					(LfoModulationTarget) parameterValue);
+				oscillator1[i]->setModulationTarget(
+					(LfoModulationTarget) parameterValue);
+			}
+			break;
+
+		case LFO1_MODULATION_AMOUNT:  // 9
+			floatValue = parameterValue * 0.01;
+			for (i = 0; i < POLYPHONY; i++) {
+				oscillator1[i]->setModulationAmount(floatValue);
+			}
+			break;
+
+		case FILTER_LOWPASS:          // 20
+			filter.setFrequency(parameterValue);
+			break;
+		}
+	}
 }

@@ -4,6 +4,9 @@
  * Main oscillator produces signal that is part of the sound.
  * Main oscillator can be modulated by a Low Frequency Oscillator (LFO).
  *
+ * Note: MainOscillator calls LowFrequencyOscillator.setRelativeFrequency(),
+ * but not any other methods of the LFO class.
+ *
  *  Created on: 14.3.2012
  *      Author: alkim
  */
@@ -12,6 +15,7 @@
 #define MAINOSCILLATOR_H_
 
 #include "Oscillator.h"
+#include "LowFrequencyOscillator.h"
 #include "SynthParameters.h"
 
 #include "tests/testing.h"
@@ -24,8 +28,10 @@ public:
 	virtual ~MainOscillator();
 
 	void setWaveform(WaveformType w);
+	void setDedicatedLfo(LowFrequencyOscillator * lfo);
 	void setModulationTarget(LfoModulationTarget m);
 	void setModulationAmount(float a);
+	void setLfoFrequencyType(LfoFrequencyType t);
 
 	void setAttack(unsigned int a);
 	void setDecay(unsigned int d);
@@ -48,7 +54,9 @@ protected:
 
 	// Parameters: modulation target and amount
 	LfoModulationTarget modulation;
+	LfoFrequencyType lfoFrequencyType;
 	float modulationAmount;
+	LowFrequencyOscillator * dedicatedLfo;
 
 	// Parameters: Amplitude envelope (ADSR curve) parameters.
 	// Attack, decay and release are in samples.
