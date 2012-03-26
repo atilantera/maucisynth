@@ -8,7 +8,6 @@
 
 #include "LfoTest.h"
 #include "MainOscillatorTest.h"
-#include "ValueSetTest.h"
 
 int main()
 {
@@ -25,11 +24,6 @@ int main()
 	}
 	mainOsc.testAll();
 	mainOsc.finishTesting();
-
-	// Classes ValueSet and KeyValueSet
-	std::cout << "Testing ValueSet and KeyValueSet" << std::endl;
-	ValueSetTest vsTest;
-	vsTest.testAll();
 
 	std::cout << "Testing finished." << std::endl;
 	return 0;
