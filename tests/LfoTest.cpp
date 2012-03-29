@@ -9,7 +9,7 @@
 
 const unsigned int testBufferLength = 40;
 
-LfoTest::LfoTest()
+LfoTest::LfoTest() : LowFrequencyOscillator(parameters)
 {
 	// Random seed must be a constant so that test can be exactly repeatable
 	srandom(0);
@@ -28,7 +28,7 @@ void LfoTest::testSineTable() {
 	for (int i = 0; i < WAVE_TABLE_LENGTH; i += step) {
 		x = i * 2 * M_PI / WAVE_TABLE_LENGTH;
 		if (fabs(sineTable[i] - sinf(x)) > 0.002) {
-			std::cout << "testSineTable failed!" << std::endl;
+			std::cout << "LfoTest::testSineTable failed!" << std::endl;
 			return;
 		}
 	}
@@ -43,7 +43,7 @@ void LfoTest::testFrequencyRandomness()
 	for (int i = 0; i < 100; i++) {
 		setFrequency(testFrequency);
 		if (!(minValue <= frequency && frequency <= maxValue)) {
-			std::cout << "testFrequencyRandomness failed! " <<
+			std::cout << "LfoTest::testFrequencyRandomness failed! " <<
 				" randomDetune=" << randomDetune << " range=[" << minValue <<
 				", " << maxValue << "]" << ", but got frequency: " <<
 				frequency << std::endl;
@@ -54,18 +54,15 @@ void LfoTest::testFrequencyRandomness()
 
 void LfoTest::testLFO() {
 	float soundBuffer[testBufferLength];
-	LowFrequencyOscillator osc;
 
 	Oscillator::setBufferLength(testBufferLength);
 
 	unsigned int i;
 	float x;
-	float frequency;
 
 	Oscillator::setSamplerate(bufferLength);
 
 	for (frequency = 1; frequency < 10; frequency *= 1.9) {
-		setFrequency(frequency);
 		generateSound(soundBuffer);
 		for (i = 0; i < testBufferLength; i++) {
 			x = (float)i / 40 * 2 * M_PI * frequency;

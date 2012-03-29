@@ -27,17 +27,7 @@ public:
 	MainOscillator(OscillatorParameters & p);
 	virtual ~MainOscillator();
 
-	void setWaveform(WaveformType w);
 	void setDedicatedLfo(LowFrequencyOscillator * lfo);
-	void setModulationTarget(LfoModulationTarget m);
-	void setModulationAmount(float a);
-	void setLfoFrequencyType(LfoFrequencyType t);
-
-	void setAttack(unsigned int a);
-	void setDecay(unsigned int d);
-	void setSustain(float s);
-	void setRelease(unsigned int r);
-
 	void noteOn(unsigned char noteKey, unsigned char noteVelocity);
 	void noteOff();
 	void muteFast();
@@ -48,9 +38,6 @@ public:
 	EnvelopePhase getEnvelopePhase() const;
 
 protected:
-
-	// Parameter: base waveform
-	WaveformType waveform;
 
 	// Parameters: modulation target and amount
 	LfoModulationTarget modulation;

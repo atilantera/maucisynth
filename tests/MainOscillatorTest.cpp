@@ -46,12 +46,12 @@ bool MainOscillatorTest::initTests()
 
 void MainOscillatorTest::testAll()
 {
-	testBasicSynthesis();
+	testBasicSynthesis(false);
 	testFrequencyModulation(false);
-	testAmplitudeModulation(false);
+	testAmplitudeModulation(true);
 	testPulseWidthModulation(false);
 	testAdsrCurve(false);
-	testFastMute(true);
+	testFastMute(false);
 }
 
 void MainOscillatorTest::finishTesting()
@@ -61,7 +61,7 @@ void MainOscillatorTest::finishTesting()
 	}
 }
 
-void MainOscillatorTest::testBasicSynthesis()
+void MainOscillatorTest::testBasicSynthesis(bool generateOutput)
 {
 	unsigned int i;
 	float x, growth;
@@ -70,6 +70,7 @@ void MainOscillatorTest::testBasicSynthesis()
 	setFrequency(2.0);
 
 	// Sine wave 1
+	setWaveform(SINE);
 	synthesizeFromWavetable(outputBuffer, modulatorBuffer);
 	for (i = 0; i < 32; i++) {
 		x = (float)i / 16 * 2 * M_PI;
@@ -77,6 +78,12 @@ void MainOscillatorTest::testBasicSynthesis()
 			std::cout << "MainOscillatorTest::testBasicSynthesis: "
 				"Test 1 (sine wave) failed!" << std::endl;
 			break;
+		}
+	}
+	if (generateOutput) {
+		testFile << "Basic sine wave. Wavelength = 16." << std::endl;
+		for (i = 0; i < 32; i++) {
+			testFile << outputBuffer[i] << std::endl;
 		}
 	}
 
@@ -101,6 +108,12 @@ void MainOscillatorTest::testBasicSynthesis()
 			growth = 0.25;
 		}
 	}
+	if (generateOutput) {
+		testFile << "Basic triangle wave. Wavelength = 16." << std::endl;
+		for (i = 0; i < 32; i++) {
+			testFile << outputBuffer[i] << std::endl;
+		}
+	}
 
 	// Sawtooth wave 1
 	synthesizeSawtooth(outputBuffer, modulatorBuffer);
@@ -117,6 +130,12 @@ void MainOscillatorTest::testBasicSynthesis()
 		}
 		x += growth;
 
+	}
+	if (generateOutput) {
+		testFile << "Basic sawtooth wave. Wavelength = 16." << std::endl;
+		for (i = 0; i < 32; i++) {
+			testFile << outputBuffer[i] << std::endl;
+		}
 	}
 
 	// Pulse wave 1
@@ -135,6 +154,12 @@ void MainOscillatorTest::testBasicSynthesis()
 			break;
 		}
 	}
+	if (generateOutput) {
+		testFile << "Basic pulse wave. Wavelength = 16." << std::endl;
+		for (i = 0; i < 32; i++) {
+			testFile << outputBuffer[i] << std::endl;
+		}
+	}
 
 	// Abs-sine wave 1
 	setWaveform(ABS_SINE);
@@ -146,6 +171,12 @@ void MainOscillatorTest::testBasicSynthesis()
 			std::cout << "MainOscillatorTest::testBasicSynthesis: "
 				"Test 5 (abs-sine wave) failed!" << std::endl;
 			break;
+		}
+	}
+	if (generateOutput) {
+		testFile << "Basic abs-sine wave. Wavelength = 16." << std::endl;
+		for (i = 0; i < 32; i++) {
+			testFile << outputBuffer[i] << std::endl;
 		}
 	}
 }
@@ -250,8 +281,7 @@ void MainOscillatorTest::testAmplitudeModulation(bool generateOutput)
 	unsigned int i;
 	samplerate = testBufferLength;
 	Oscillator::setBufferLength(testBufferLength);
-	modulation = AMPLITUDE;
-	modulationAmount = 0.5;
+	globalParameters.lfoModulationAmount = 0.5;
 	setFrequency(4.0);
 
 	setWaveform(PULSE);
@@ -307,10 +337,7 @@ void MainOscillatorTest::testAdsrCurve(bool generateOutput)
 	Oscillator::setBufferLength(testBufferLength);
 	modulation = NONE;
 
-	setAttack(250);
-	setDecay(250);
-	setSustain(0.5);
-	setRelease(500);
+	setADSR(250, 250, 0.5, 500);
 
 	setWaveform(PULSE);
 	setFrequency(16);
@@ -447,4 +474,32 @@ bool MainOscillatorTest::initTestData()
 	return true;
 }
 
+void MainOscillatorTest::setWaveform(WaveformType w)
+{
+	switch (w) {
+	case SINE:
+		wavetable = Oscillator::sineTable;
+		break;
 
+	case TRIANGLE:
+		wavetable = Oscillator::triangleTable;
+		break;
+
+	case ABS_SINE:
+		wavetable = Oscillator::absSineTable;
+		break;
+
+	case SAWTOOTH:
+	case PULSE:
+		break;
+	}
+}
+
+void MainOscillatorTest::setADSR(unsigned int a, unsigned int d, float s,
+	unsigned int r)
+{
+	this->attackTime = a * 0.001 * samplerate;
+	this->decayTime = d * 0.001 * samplerate;
+	this->sustainVolume = s;
+	this->releaseTime = r * 0.001 * samplerate;
+}

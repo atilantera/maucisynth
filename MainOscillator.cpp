@@ -19,11 +19,8 @@ const int muteLength = 16;
 MainOscillator::MainOscillator(OscillatorParameters & p) :
 	globalParameters(p)
 {
-	waveform = SINE;
+
 	wavetable = sineTable;
-	modulation = NONE;
-	modulationAmount = 0;
-	lfoFrequencyType = FIXED;
 	dedicatedLfo = NULL;
 
 	envelopePhase = OFF;
@@ -42,89 +39,12 @@ MainOscillator::MainOscillator(OscillatorParameters & p) :
 MainOscillator::~MainOscillator() {
 }
 
-// Sets waveform type
-void MainOscillator::setWaveform(WaveformType w)
-{
-	waveform = w;
-	switch (waveform) {
-	case SINE:
-		wavetable = Oscillator::sineTable;
-		break;
-
-	case TRIANGLE:
-		wavetable = Oscillator::triangleTable;
-		break;
-
-	case ABS_SINE:
-		wavetable = Oscillator::absSineTable;
-		break;
-
-	case SAWTOOTH:
-	case PULSE:
-		break;
-	}
-}
-
 // Sets a LowFrequencyOscillator whose relative frequency this
 // MainOscillator changes at "note on" events when frequency type
 // is RELATIVE.
 void MainOscillator::setDedicatedLfo(LowFrequencyOscillator * lfo)
 {
 	dedicatedLfo = lfo;
-}
-
-// Sets modulation target of a LowFrequencyOscillator
-void MainOscillator::setModulationTarget(LfoModulationTarget m)
-{
-	modulation = m;
-}
-
-// Sets modulation amount of a LowFrequencyOscillator
-void MainOscillator::setModulationAmount(float a)
-{
-	if (0 <= a && a <= 1) {
-		modulationAmount = a;
-	}
-}
-
-// Sets frequency type of a LowFrequencyOscillator:
-// FIXED or RELATIVE.
-void MainOscillator::setLfoFrequencyType(LfoFrequencyType t)
-{
-	lfoFrequencyType = t;
-}
-
-// Sets length of attack phase of envelope curve in milliseconds
-void MainOscillator::setAttack(unsigned int a)
-{
-	if (a > 5 && a < 10000) {
-		attackTime = a * samplerate / 1000;
-	}
-}
-
-// Sets length of decay phase of envelope curve in milliseconds
-void MainOscillator::setDecay(unsigned int d)
-{
-	if (d > 5 && d < 10000) {
-		decayTime = d * samplerate / 1000;
-	}
-
-}
-
-// Sets relative volume (0..1) of sustain phase of envelope curve
-void MainOscillator::setSustain(float s)
-{
-	if (0 <= s && s <= 1) {
-		sustainVolume = s;
-	}
-}
-
-// Sets length of release phase of envelope curve in milliseconds
-void MainOscillator::setRelease(unsigned int r)
-{
-	if (r > 5 && r < 10000) {
-		releaseTime = r * samplerate / 1000;
-	}
 }
 
 // Sets oscillator base frequency and maximum amplitude.
@@ -134,6 +54,11 @@ void MainOscillator::noteOn(unsigned char noteKey, unsigned char noteVelocity)
 	if (noteKey > 127 || noteVelocity == 0) {
 		return;
 	}
+
+	attackTime = globalParameters.attackTime * 0.001 * samplerate;
+	decayTime = globalParameters.decayTime * 0.001 * samplerate;
+	sustainVolume = globalParameters.sustainVolume;
+	releaseTime = globalParameters.releaseTime * 0.001 * samplerate;
 
 	lastSample = 0;
 	setFrequency(baseFrequency[noteKey]);
@@ -145,7 +70,7 @@ void MainOscillator::noteOn(unsigned char noteKey, unsigned char noteVelocity)
 	}
 	peakAmplitude = (float)noteVelocity / 127;
 
-	if (lfoFrequencyType == RELATIVE && dedicatedLfo != NULL) {
+	if (globalParameters.lfoFrequencyType == RELATIVE && dedicatedLfo != NULL) {
 		dedicatedLfo->setRelativeFrequency(frequency);
 	}
 }
@@ -178,21 +103,32 @@ const float modulatorBuffer[], bool & noteFinished)
 		return;
 	}
 
-	switch (waveform) {
+	switch (globalParameters.waveform) {
 	case SINE:
-	case TRIANGLE:
-	case ABS_SINE:
+		wavetable = Oscillator::sineTable;
 		synthesizeFromWavetable(outputBuffer, modulatorBuffer);
 		break;
+
+	case TRIANGLE:
+		wavetable = Oscillator::triangleTable;
+		synthesizeFromWavetable(outputBuffer, modulatorBuffer);
+		break;
+
+	case ABS_SINE:
+		wavetable = Oscillator::absSineTable;
+		synthesizeFromWavetable(outputBuffer, modulatorBuffer);
+		break;
+
 	case SAWTOOTH:
 		synthesizeSawtooth(outputBuffer, modulatorBuffer);
 		break;
+
 	case PULSE:
 		synthesizePulseWave(outputBuffer, modulatorBuffer);
 		break;
 	}
 
-	if (modulation == AMPLITUDE) {
+	if (globalParameters.lfoModulationTarget == AMPLITUDE) {
 		applyAmplitudeModulation(outputBuffer, modulatorBuffer);
 	}
 
@@ -206,7 +142,7 @@ const float modulatorBuffer[])
 {
 	unsigned int i;
 
-	if (modulation == FREQUENCY) {
+	if (globalParameters.lfoModulationTarget == FREQUENCY) {
 		for (i = 0; i < bufferLength; i++) {
 			outputBuffer[i]
 				= wavetable[(int)(angle * WAVE_TABLE_LENGTH + 0.5)];
@@ -234,11 +170,12 @@ const float modulatorBuffer[])
 {
 	unsigned int i;
 
-	if (modulation == FREQUENCY) {
+	if (globalParameters.lfoModulationTarget == FREQUENCY) {
+		float angleCoefficent = anglePerSample *
+				(1 + globalParameters.lfoModulationAmount);
 		for (i = 0; i < bufferLength; i++) {
 			outputBuffer[i] = angle * 2 - 1;
-			angle += anglePerSample * (1 + modulationAmount
-				* modulatorBuffer[i]);
+			angle += angleCoefficent * modulatorBuffer[i];
 			if (angle > 1) {
 				angle -= 1;
 			}
@@ -260,7 +197,7 @@ const float modulatorBuffer[])
 {
 	unsigned int i;
 
-	if (modulation == PULSE_WIDTH) {
+	if (globalParameters.lfoModulationTarget == PULSE_WIDTH) {
 		for (i = 0; i < bufferLength; i++) {
 			if (angle < pulseWidth) {
 				outputBuffer[i] = 1;
@@ -271,7 +208,9 @@ const float modulatorBuffer[])
 			angle += anglePerSample;
 			if (angle > 1) {
 				angle -= 1;
-				pulseWidth = 0.5 * (1 + modulationAmount * modulatorBuffer[i]);
+				pulseWidth = 0.5 *
+					(1 + globalParameters.lfoModulationAmount *
+					 modulatorBuffer[i]);
 			}
 		}
 	}
@@ -283,8 +222,8 @@ const float modulatorBuffer[])
 			else {
 				outputBuffer[i] = -1;
 			}
-			angle += anglePerSample * (1 + modulationAmount
-				* modulatorBuffer[i]);
+			angle += anglePerSample * (1 +
+				globalParameters.lfoModulationAmount * modulatorBuffer[i]);
 			if (angle > 1) {
 				angle -= 1;
 			}
@@ -309,7 +248,7 @@ const float modulatorBuffer[])
 void MainOscillator::applyAmplitudeModulation(float outputBuffer[],
 const float modulatorBuffer[])
 {
-	float lfoAmount = modulationAmount * 0.5;
+	float lfoAmount = globalParameters.lfoModulationAmount * 0.5;
     float lfoMidpoint = 1 - lfoAmount;
 
     for (unsigned int i = 0; i < bufferLength; i++) {

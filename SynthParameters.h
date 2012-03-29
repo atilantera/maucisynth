@@ -90,16 +90,21 @@ class OscillatorParameters {
 public:
 	WaveformType waveform;
 
+	// Attack, decay and release times are in milliseconds.
+	// 0 <= sustainVolume <= 1
 	unsigned int attackTime;
 	unsigned int decayTime;
 	float sustainVolume;
 	unsigned int releaseTime;
 
-	LfoModulationTarget modulation;
+	// 0 <= lfoModulationAmount <= 1
+	// lfoFixedFrequency is in Hz
+	// lfoRelativeFrequency is LFO frequency / MainOsc frequency.
+	LfoModulationTarget lfoModulationTarget;
 	LfoFrequencyType lfoFrequencyType;
-	float modulationAmount;
-	float fixedLfoFrequency;
-	float relativeLfoFrequency;
+	float lfoModulationAmount;
+	float lfoFixedFrequency;
+	float lfoRelativeFrequency;
 };
 
 

@@ -13,8 +13,8 @@
 
 class LowFrequencyOscillator : public Oscillator {
 public:
-	LowFrequencyOscillator();
-	virtual ~LowFrequencyOscillator();
+	LowFrequencyOscillator(OscillatorParameters & p);
+	virtual ~LowFrequencyOscillator() {}
 
 	void setModulationTarget(LfoModulationTarget target);
 	void setRelativeFrequency(float mainOscFrequency);
@@ -22,8 +22,7 @@ public:
 	void generateSound(float buffer[]);
 
 private:
-	LfoModulationTarget modulationTarget;
-	float frequencyCoefficent;
+	OscillatorParameters & globalParameters;
 
 };
 

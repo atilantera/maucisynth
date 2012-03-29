@@ -7,29 +7,8 @@
 
 #include "LowFrequencyOscillator.h"
 
-LowFrequencyOscillator::LowFrequencyOscillator() {
-	modulationTarget = NONE;
-}
-
-LowFrequencyOscillator::~LowFrequencyOscillator() {
-}
-
-void LowFrequencyOscillator::setModulationTarget(LfoModulationTarget target)
-{
-	modulationTarget = target;
-}
-
-// This is related to LfoFrequencyType FIXED, MinRelativeLfoFrequency and
-// MaxRelativeLfoFrequency in SynthParameters.h.
-void LowFrequencyOscillator::setRelativeFrequencyCoefficent(float c)
-{
-	frequencyCoefficent = c;
-}
-
-void LowFrequencyOscillator::setRelativeFrequency(float mainOscFrequency)
-{
-	setFrequency(mainOscFrequency * frequencyCoefficent);
-}
+LowFrequencyOscillator::LowFrequencyOscillator(OscillatorParameters & p) :
+globalParameters(p) { }
 
 void LowFrequencyOscillator::generateSound(float buffer[]) {
 	// With pulse width modulation, 70% on-pulse / 30% off-pulse sounds
@@ -38,7 +17,7 @@ void LowFrequencyOscillator::generateSound(float buffer[]) {
     // where the wave sounds the same, and therefore we need to split
     // the frequency.
 	float increase = anglePerSample;
-    if (modulationTarget == PULSE_WIDTH) {
+    if (globalParameters.lfoModulationTarget == PULSE_WIDTH) {
     	increase *= 0.5;
     }
 

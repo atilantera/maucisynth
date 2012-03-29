@@ -61,6 +61,11 @@ void Oscillator::setFrequency(float f)
 	anglePerSample = frequency / samplerate;
 }
 
+float Oscillator::getFrequency() const
+{
+	return frequency;
+}
+
 // Generates waveform tables
 void Oscillator::generateWaveTables()
 {

@@ -291,9 +291,6 @@ void Synthesizer::processFastMute(NoteSource source)
 void Synthesizer::processParameterChange(unsigned int parameter,
 	unsigned int parameterValue)
 {
-	unsigned int i;
-	float floatValue;
-
 	std::cout << "Synthesizer.processParameterChange(" << parameter << "," <<
 		parameterValue << ")" << std::endl;
 
@@ -301,86 +298,47 @@ void Synthesizer::processParameterChange(unsigned int parameter,
 		switch (parameter) {
 
 		case OSC1_WAVEFORM: // 0
-			if (parameterValue < maxWaveformType) {
-				for (i = 0; i < POLYPHONY; i++) {
-					oscillator1[i]->setWaveform((WaveformType)parameterValue);
-				}
-			}
+			osc1parameters.waveform = (WaveformType)parameterValue;
 			break;
 
 		case OSC1_ATTACK:   // 1
-			for (i = 0; i < POLYPHONY; i++) {
-				oscillator1[i]->setAttack(parameterValue);
-			}
+			osc1parameters.attackTime = parameterValue;
 			break;
 
 		case OSC1_DECAY:    // 2
-			for (i = 0; i < POLYPHONY; i++) {
-				oscillator1[i]->setDecay(parameterValue);
-			}
+			osc1parameters.decayTime = parameterValue;
 			break;
 
 		case OSC1_SUSTAIN:  // 3
-			floatValue = parameterValue * 0.01;
-			for (i = 0; i < POLYPHONY; i++) {
-				oscillator1[i]->setSustain(floatValue);
-			}
+			osc1parameters.sustainVolume = parameterValue * 0.01;
 			break;
 
 		case OSC1_RELEASE:  // 4
-			for (i = 0; i < POLYPHONY; i++) {
-				oscillator1[i]->setRelease(parameterValue);
-			}
+			osc1parameters.releaseTime = parameterValue;
 			break;
 		}
 	}
 	else {
 		switch (parameter) {
 		case LFO1_FREQUENCY_TYPE:     // 5
-			lfo1frequencyType = (LfoFrequencyType)parameterValue;
-			if (lfo1frequencyType == FIXED) {
-				for (i = 0; i < POLYPHONY; i++) {
-					oscillator1[i]->setLfoFrequencyType(lfo1frequencyType);
-				}
-				lfo1[0]->setFrequency(lfo1fixedFrequency);
-			}
-			else {
-				for (i = 0; i < POLYPHONY; i++) {
-					oscillator1[i]->setLfoFrequencyType(lfo1frequencyType);
-					lfo1[i]->setRelativeFrequencyCoefficent(
-						lfo1relativeFrequency);
-				}
-			}
+			osc1parameters.lfoFrequencyType = (LfoFrequencyType)parameterValue;
 			break;
 
 		case LFO1_FIXED_FREQUENCY:    // 6
-			// Perform a lazy change: don't update MainOscillators and
-			// LowFrequencyOscillators until next LFO1_FREQUENCY_TYPE
-			// parameter change.
-			lfo1fixedFrequency = parameterValue * 0.01;
+			osc1parameters.lfoFixedFrequency = parameterValue * 0.01;
 			break;
 
 		case LFO1_RELATIVE_FREQUENCY: // 7
-			// Perform a lazy change: don't update MainOscillators and
-			// LowFrequencyOscillators until next LFO1_FREQUENCY_TYPE
-			// parameter change.
-			lfo1relativeFrequency = parameterValue * 0.01;
+			osc1parameters.lfoRelativeFrequency = parameterValue * 0.01;
 			break;
 
 		case LFO1_TARGET_TYPE:        // 8
-			for (i = 0; i < POLYPHONY; i++) {
-				lfo1[i]->setModulationTarget(
-					(LfoModulationTarget) parameterValue);
-				oscillator1[i]->setModulationTarget(
-					(LfoModulationTarget) parameterValue);
-			}
+			osc1parameters.lfoModulationTarget =
+				(LfoModulationTarget) parameterValue;
 			break;
 
 		case LFO1_MODULATION_AMOUNT:  // 9
-			floatValue = parameterValue * 0.01;
-			for (i = 0; i < POLYPHONY; i++) {
-				oscillator1[i]->setModulationAmount(floatValue);
-			}
+			osc1parameters.lfoModulationAmount = parameterValue * 0.01;
 			break;
 
 		case FILTER_LOWPASS:          // 20

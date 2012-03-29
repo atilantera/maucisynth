@@ -19,6 +19,9 @@ public:
 	void testSineTable();
 	void testFrequencyRandomness();
 	void testLFO();
+
+private:
+	OscillatorParameters parameters;
 };
 
 #endif /* LFOTEST_H_ */

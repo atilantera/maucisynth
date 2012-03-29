@@ -21,7 +21,7 @@ public:
 	void testAll();
 	void finishTesting();
 
-	void testBasicSynthesis();
+	void testBasicSynthesis(bool generateOutput);
 	void testFrequencyModulation(bool generateOutput);
 	void testAmplitudeModulation(bool generateOutput);
 	void testPulseWidthModulation(bool generateOutput);
@@ -47,6 +47,8 @@ private:
 	OscillatorParameters parameters;
 
 	bool initTestData();
+	void setWaveform(WaveformType w);
+	void setADSR(unsigned int a, unsigned int d, float s, unsigned int r);
 };
 
 
