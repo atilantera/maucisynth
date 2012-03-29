@@ -1,127 +1,104 @@
 Tehtävää aika- ja riippuvuusjärjestyksessä:
 
-1. Luokat ValueSet ja KeyValueSet
-   * Käyttötarkoitus:
-     1. lista vapaista oskillaattoreista        
-     2. lista soivista oskillaattoreista, nuottilähde GUI
-     3. lista soivista oskillaattoreista, nuottilähde MIDI      
-   * toteutus: kiinteän kokoinen taulukko (koko = synan polyfonia)
-   * listan EI tarvitse olla järjestyksessä, joten saadaan lisäys ja poisto
-     vakioajassa/olio seuraavalla menettelyllä (parempi kuin STL:n vector!):
-     Lisäys taulukon seuraavaan vapaaseen paikkaan:
-        taulukko[kaytossa++] = lisattavaArvo;
-     Poisto: poistetaan halutun indeksin kohdalta, kopioidaan        
-        taulukko[poistoIndeksi] = taulukko[kaytossa - 1];
-        kaytossa--;
-        (tai paremmin: taulukko[poistoIndeksi] = taulukko[--kaytossa];)
-        
-   Note on -tapahtuma:
-   oskillaattoriIndeksi = vapaat.pop();
-   soivat.push(oskillaattoriIndeksi, kosketin);
-   
-   Note off -tapahtuma:
-   soivat.remove(kosketin);
-   vapaat.push(oskillaattoriIndeksi);
-   
-   All notes off -tapahtuma:
-   while (guiNuotit.size() != 0) {
-       oskillaattoriIndeksi = guiNuotit.pop();
-       vapaat.push(oskillaattoriIndeksi);
-   }
-   
-   Vapaat oskillaattorit tallennetaan ValueSet-olioon.
-   Soivat oskillaattorit tallennetaan KeyValueSet-olioon.
-   
-   Luokka FixedIndexMap periytyy luokasta FixedIndexSet.
-   FixedIndexMapissa tallennetaan kosketin-oskillaattoriIndeksi-arvopareja.
-   Kosketin toimii avaimena. Käytännössä FixedIndexMap sisältää
-   unsigned short indexOfKey[256] -taulukon, jossa arvo 0..255 tarkoittaa
-   indeksiä FixedIndexSet.valueTablessa ja 256 tarkoittaa, että kyseistä
-   avainta ei ole tässä listassa.
-   
-   
-   Pointteritoteuksen hyvät ja huonot puolet:
-   + päästään hieman nopeammin käsiksi
-   - vain mainOscillatorien pointtereita. Kun lfo moduloi
-   - sitten tulevaisuudessa, kun useampi mainOscillator per nuotti, niin
-     pitäisi tallentaa pointteriryhmiä. Kuulostaa vaivalloiselta 
-   
-   int- tai unsigned char -toteutuksen hyvät ja huonot puolet
-   + tilansäästö: indeksit 0-255 riittävät hyvin, silloin unsigned char
-     riittäisi
-   + ei turhaa, vaarallista pointteriräpläystä
-   + helpompi debuggaus
-   - indeksi täytyy muuntaa vielä pointteriksi oskillaattoriolioon
-   
-3. Synthesizer-luokka
-   - Sopivat tietorakenteet oskillaattoreille
+1.1 MainOscillator: OscillatorParameters käyttöön
+1.2 MainOscillatorTest: OscillatorParameters käyttöön
+1.3 LowFrequencyOscillator: OscillatorParameters käyttöön
+1.4 LfoTest: OscillatorParameters käyttöön
+1.5 Synthesizer: OscillatorParameters käyttöön
 
-   1. Jono: vapaat oskillaattorit
-      Toteutus: STL:n deque. Toisaalta jonon maksimipituus tiedetään, ja
-      jonoon tallennetaan pointtereita oskillaattoreihin tai indeksejä,
-      joten jonon voisi toteuttaa taulukkona. Jonon sisältö kuitenkin vaihtuu
-      nopeasti, joten kiinteä taulukkototeutus ei fragmentoisi muistia.
-      
-      
-   2. Lista: soivat oskillaattorit, joiden nuottilähde on GUI
-   3. Lista: soivat oskillaattorit, joiden nuottilähde on MIDI
-      Tässäkin kiinteä taulukkokoteutus olisi hyvä.
-
-
-   Huom! Tallenna vapaat oskillaattorit jonona. Käytännön toteutus voi
-   olla taulukko tai STL:n jono. On tehottomampaa käydä läpi kaikki
-   oskillaattorit etsien ensimmäistä vapaata aina, kun tulee uusi nuotti.
-   (Tämän takia synth.c:n muuttujaa osc_mute ei enää tarvita.)
+Ideana on siis se, että MainOscillator ja LFO päivittävät oliokohtaiset
+parametrinsa viittauksena saamastaan, Synthesizerin omistamasta
+OscillatorParametersista. Esim. MainOscillator päivittää attack-arvonsa
+applyAttack -metodin alussa.
    
-   Huom! Tehokasta note offia varten pitää tehdä taulukot
-   MainOscillator * GuiNotes[128]; ja
-   MainOscillator * MidiNotes[128];
-   Indeksinä on suoraan nuotin koskettimen numero (MIDI-numeroinnilla).
-   Kun tulee note off, niin note offin lähteestä (Gui, MIDI) riippuen
-   tsekataan jommastakummasta taulukosta oikea MainOscillator.
-   Kun tulee all notes off, niin on ihan riittävän nopeaa käydä 128
-   nuotin taulukko läpi (Tällaista erikoistapausta varten ei yksinään kannata
-   tehdä listaa kummankin nuottilähteen soivista oskillaattoreista.)
-
-   - metodit processNoteOn, processNoteOff, processFastMute.
-   - metodi processParameterChange
-       - Eri parametreja on paljon. Kannattaako tehdä arvon haarukointi
-         pitkän switch-lauseen sijaan?
-         
-   - äänentuottometodi
-     
-
    
+2. Synthesizer-luokka
 
-   Kolme äänisynteesipuskuria Synthesizerissä riittää:
-   1. LFO:n ääni. Jos LFO:n taajuus on kiinteä, niin LFO:n ääni on kaikille
-      MainOscillatoreille sama. Silloin LFO tarvitsee laskea vain kerran.
-   2. MainOscillatorin ääni.
-   3. Miksaus. Jokainen soiva MainOscillator generoidaan vuorollaan ja
-      summataan miksauspuskuriin.   
-   
-   Kun LFO moduloi, niin Synthesizer kuitenkin aina kutsuu
-   LowFrequencyOscillator.generateSound():ia.
-   LFO piirtää sille annettuun aaltotaulukkoon signaalinsa, ja sitten
-   aaltotaulukko annetaan edelleen osoitinparametrina
-   MainOscillator.generateSound():ille.
+   Havainto: Parametrimuutokset aiheuttavat massiivisia muutoksia
+   monissa oskillaattoreissa. (Kokeile hinkata GUI:n slidereitä edestakaisin
+   ja katso, kun CPU utilization pomppaa. Tosin niin pomppaa C-versiossakin.)
+
+   Mitä tehdä: kokeile ajaa maucisynth gprofilla. Vika ei ole ainakaan
+   Synthesizer-luokassa, koska jos Synthesizer::processEvents() jätetään
+   kokonaan kutsumatta, niin CPU:n pomppauksessa ei tapahtu merkittävää
+   muutosta.
+       Lisähuomio: kun CPU pomppaa, niin 30-40% resursseista vie
+   maucisynth, 20% xorg ja 11% qjackctl. Jännää. Muuten xorg ja qjackctl
+   vievät vain pari prosenttia CPU-aikaa.
+
+   Tietenkin voisi tehdä MainOscillatoriin vakioviittauksen johonkin
+   Synthesizerissä olevaan parametristruktiin, jossa on ADSR ja moduloinnit.
+       Ongelma 1: MainOscillator.wavetable
+       Ratkaisu: uusi kenttä: MainOscillator.currentWaveform.
+                MainOscillator.generateSound()iin vertailu: jos
+                currentWaveform != parametrit.waveform, niin päivitä
+                currentWaveform ja wavetable.
+
+       Ongelma 2: yksikkötestit menisivät aika lailla uusiksi, kun
+       MainOscillatorista poistuu parametrinmuutosmetodit.
+       Ratkaisu: säästetään MainOscillatorin ikiomat ADSR- ja modulointi-
+       parametrit. Parametrit päivitetään tarvittaessa Synthesizerin
+       yleisestä parametristruktista. 
+
 
    Kun LFO:n taajuus riippuu pääoskillaattorin taajuudesta, niin
    pääoskillaattorin pärähtäessä soimaan se asettaa LFO:n taajuuden.
    (Pääoskillaattorissa on viittaus sille varattuun LFO:hon.)
    
-   C-version synth.c:n handle_parameter_change():ssa voisi yhden jättimäisen
-   switch-lauseen sijasta tehdä haarukointeja SynthGui::buttonSelectin tapaan.
-
-
-  
-8. luokka Filter
+8. luokka LowpassFilter
    
 9. Optimointia: kannattaako oskillaattorin äänisynteesi laittaa inlineksi?
    Tietenkin se kiehtoisi, mutta ei taida onnistua, koska metodeissa on
    paikallisia muuttujia. Muutenkaan varsinaisen oskillaattorin äänisynteesi
    ei ole pelkästään aaltotaulukosta lukujen napsimista ja arvojen summaamista
    miksauspuskuriin. Muista modulointi.
+
+10. Johtuuko design.txt:ssä oleva slider-jutska EventBufferin mutexeista?
+   Kun puskuri on 128 samplea ja samplerate 44100, niin jackCallbackia
+   kutsutaan 130 kertaa sekunnissa. Joka kerran EventBufferin mutexi päälle
+   ja mutexi pois. Lisäksi liukusäätimen hinkkaaminen aiheuttaa kymmeniä
+   funktiokutsuja sekunnissa SynthGui-luokan callbackeihin. Jokainen
+   niistä kutsuu EventBufferia, ja niissäkin kaikissa aina mutexi päälle
+   ja mutexi pois.
+       Parempi ratkaisu olisi, että GUI-callbackit vain päivittävät jotain
+   float-arvoja SynthGui-luokassa. Sitten esim. kerran 1/10 tai 1/20 sekunnissa
+   Synthesizer käy päivittämässä itselleen muuttuneet arvot GUIlta.
+   Näppäinten painallukset ja vapautukset joutuu silti tallentamaan
+   EventBufferiin. Tai sitten joka puskurillisella voi olla tasan yksi
+   näppäimen painallus ja näppäimen vapautus.
+       Kaikkein parasta tietenkin olisi, että GUIn arvot päivittyisivät
+   suoraan Synthesizerin parametreihin. Sen voi tehdä GUIn ja Synthesizerin
+   jakamalla sellaisella SynthParameters-oliolla, jossa on kaikki synan
+   parametrit: kaikki oskillaattorit jne. Ei olis paha. Synthesizer lukee
+   kerrallaan tasan yhden, muista arvoista riippumattoman arvon
+   (osc1attack, lfo1relativeFrequency, osc1modulationType - kaikki lopulta
+   int- tai float-arvoja), joten mutexeja ei tarvita. Tällöin käytännössä
+   SynthGui saa kirjoitella arvoja vapaasti uusiksi. Sitten, kun Synthesizerin
+   on aika generoida seuraava äänipuskuri, niin kaikki soivat oskillaattorit
+   (sekä MainOscillatorit että LFO:t) päivittävät tarvitsemansa arvot
+   SynthParameters-oliosta.
+       Mutexittomassa ratkaisussa ainoa ongelma on se, että jos JACKin
+   puskurikoko on valtava, esim. 4096, niin 44100 Hz sampleratella
+   Synthesizer päivittää arvoja vain kerran kymmenesosasekunnissa. Jos
+   GUI:n kontrolleja silloin räplää tosi nopeasti ja sitten lopettaa
+   räpläämisen, niin jokin nappi saattaa jäädä väärään asentoon, ts. GUIn
+   viimeisin arvo ei päivity Synthesizeriin. Näin käy nimenomaan silloin,
+   jos SynthParametersissa on jotain boolean-arvoja kuittausta varten:
+   1. Säie 1: Synthesizer lukee arvon.
+   2. Säie 2: GUI kirjoittaa arvon.
+   3. Säie 2: GUI laittaa kuittauksen trueksi.
+   4. Säie 1: Synthesizer laittaa kuittauksen falseksi.
+       Mutexittoman ratkaisun toinen ongelma on synan soittaminen tietokone-
+   näppäimistöltä. Synthparametersissa pitäisi olla bool-arvot jokaiselle
+   128 MIDI-koskettimelle. Synthesizerin pitäisi joka puskurillisella käydä
+   koko 128 arvon bool-taulukko (kosketin painettu/vapaana) läpi ja katsoa,
+   mitkä koskettimet ovat äskettäin muuttuneet. Tietysti jos 128 kosketinta
+   pakkaa biteittäin, niin 32 bitin unsigned inttejä tarvitaan neljä.
+   Tai 8 bitin unsigned chareja tarvitaan 16. Tutkitaan, mitkä charit ovat
+   muuttuneet, puretaan bitit chareista ja tarkistetaan jokaisesta muuttuneesta
+   charista kaikki 8 kosketinta. Äh, tämäkin ratkaisu menee jo aika
+   hakkeroinniksi, vaikka bitti-andit ja vertailut ovatkin nopeita.
+   
    
 
 

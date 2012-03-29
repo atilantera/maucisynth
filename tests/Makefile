@@ -4,7 +4,9 @@ CFLAGS= -std=c++0x -Wall -Wextra -pedantic -g `pkg-config --cflags gtk+-2.0`
 LIBS=-ljack -lm `pkg-config --libs gtk+-2.0`
 RM=rm -f
 
-all: LfoTest.o MainOscillatorTest.o TestAll.o
+all: testall
+
+testall: LfoTest.o MainOscillatorTest.o TestAll.o
 	$(LD) $(LIBS) LfoTest.o MainOscillatorTest.o TestAll.o \
 	../LowFrequencyOscillator.o ../MainOscillator.o ../Oscillator.o \
 	-o testall

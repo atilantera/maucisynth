@@ -36,7 +36,7 @@ Synthesizer::Synthesizer(EventBuffer & b, SynthGui & g): events(b), gui(g)
 	filter.setFrequency(MinLowpassFrequency);
 
 	for (i = 0; i < POLYPHONY; i++) {
-		oscillator1[i] = new MainOscillator();
+		oscillator1[i] = new MainOscillator(osc1parameters);
 		lfo1[i] = new LowFrequencyOscillator();
 	}
 

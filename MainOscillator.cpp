@@ -16,7 +16,8 @@ const float steepness = 4;
 
 const int muteLength = 16;
 
-MainOscillator::MainOscillator()
+MainOscillator::MainOscillator(OscillatorParameters & p) :
+	globalParameters(p)
 {
 	waveform = SINE;
 	wavetable = sineTable;
@@ -355,9 +356,6 @@ void MainOscillator::applyEnvelope(float outputBuffer[])
 	}
 
 	lastSample = outputBuffer[bufferLength - 1];
-
-	// TODO: fast mute here?
-	// (like in synth.c/apply_envelope_exp)
 }
 
 unsigned int MainOscillator::applyAttack(float outputBuffer[], unsigned int i)

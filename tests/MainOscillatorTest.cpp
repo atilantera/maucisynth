@@ -1,7 +1,7 @@
 
 #include "MainOscillatorTest.h"
 
-MainOscillatorTest::MainOscillatorTest()
+MainOscillatorTest::MainOscillatorTest() : MainOscillator(parameters)
 {
 	 testBufferLength = 128;
 

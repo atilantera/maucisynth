@@ -24,7 +24,7 @@ enum EnvelopePhase { ATTACK, DECAY, SUSTAIN, RELEASE, OFF, FAST_MUTE };
 
 class MainOscillator : public Oscillator {
 public:
-	MainOscillator();
+	MainOscillator(OscillatorParameters & p);
 	virtual ~MainOscillator();
 
 	void setWaveform(WaveformType w);
@@ -65,6 +65,8 @@ protected:
 	unsigned int decayTime;
 	float sustainVolume;
 	unsigned int releaseTime;
+
+	OscillatorParameters & globalParameters;
 
 	// Dynamic parameter: Peak amplitude of the oscillator. MIDI note velocity
 	// determines this. It is coefficent between 0..1.

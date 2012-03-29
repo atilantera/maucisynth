@@ -15,11 +15,12 @@
 
 // Length of wave tables in samples.
 // Oscillator::baseFrequency[0] ~= 8 Hz.
-// Typical samplerate is 44100 .. 96000 Hz.
-// Therefore 96000 / 8 = 12000 samples would be sufficient to reproduce
-// high-resolution waves at 8 Hz while samplerate is 96 kHz.
-// 12288 = 3 * 4096. (If system memory page size is 4 kB, it's equally 3 pages.)
-const int WAVE_TABLE_LENGTH = 12288;
+// Typical samplerate is 44100 Hz.
+// Therefore 44100 / 8 = 5512 samples would be sufficient to reproduce
+// high-resolution waves at 8 Hz when samplerate is 44,1 kHz.
+// 4096 samples will fit nicely to four 4k memory pages when
+// sizeof(float) == 4.
+const int WAVE_TABLE_LENGTH = 4096;
 
 class Oscillator {
 public:

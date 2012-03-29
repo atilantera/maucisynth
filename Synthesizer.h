@@ -56,6 +56,8 @@ private:
 	NoteSource noteSource[POLYPHONY];
 	unsigned char noteKey[POLYPHONY];
 
+	OscillatorParameters osc1parameters;
+
 	LfoFrequencyType lfo1frequencyType;
 	float lfo1fixedFrequency;
 	float lfo1relativeFrequency;

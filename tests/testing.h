@@ -12,6 +12,6 @@
 #include <iostream>
 
 // Defining this makes class EventBuffer print debug messages
-#define GUI_TESTING
+//#define GUI_TESTING
 
 #endif /* TESTING_H_ */

@@ -1,0 +1,21 @@
+Optimization possibilities of maucisynth
+----------------------------------------
+
+Compiler optimization
+GCC: -O2 -march=athlon-xp
+
+Assembler optimization
+* manual pointer loops
+* use of MMX, SSE, SSE2 (SIMD instructions)
+* use objdump to examine whether GCC can find uses for MMX/SSE/SSE2
+  instructions with -O2 -march=athlon-xp
+
+Processor cache usage
+* Athlon XP 1600+ has 64 kb of L1 (data) cache and 256 kb of L2 cache.
+  Wave tables take 3 * 4 * 4096 bytes = 48 kb.
+  ADSR table might take just 2 * 4 * 1204 bytes = 8 kb.
+  The smaller tables, the more likely they can be kept in memory.
+
+Multicore
+* Sounds of simultaneously playing oscillators could easily be calculated
+  on different threads, each thread for one processor core.

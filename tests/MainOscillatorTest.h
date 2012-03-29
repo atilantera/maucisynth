@@ -44,6 +44,8 @@ private:
 	float * pulseModulatedPulse;
 	float * amplitudeModulatedPulse;
 
+	OscillatorParameters parameters;
+
 	bool initTestData();
 };
 

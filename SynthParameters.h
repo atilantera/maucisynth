@@ -67,9 +67,11 @@ const float MaxRelativeLfoFrequency = 0.5;
 const float MinLfoModulation = 0.01;
 const float MaxLfoModulation = 1;
 
+// LowPassFrequency is in Hz.
 const unsigned int MinLowpassFrequency = 100;
 const unsigned int MaxLowpassFrequency = 10000;
 
+// ADSR times are in milliseconds.
 const unsigned int MinAttackTime = 5;
 const unsigned int MaxAttackTime = 1000;
 
@@ -82,7 +84,23 @@ const unsigned int MaxSustainVolume = 100;
 const unsigned int MinReleaseTime   = 5;
 const unsigned int MaxReleaseTime   = 3000;
 
+// Class OscillatorParameters has parameters of one MainOscillator-
+// LowFrequencyOscillator combination.
+class OscillatorParameters {
+public:
+	WaveformType waveform;
 
+	unsigned int attackTime;
+	unsigned int decayTime;
+	float sustainVolume;
+	unsigned int releaseTime;
+
+	LfoModulationTarget modulation;
+	LfoFrequencyType lfoFrequencyType;
+	float modulationAmount;
+	float fixedLfoFrequency;
+	float relativeLfoFrequency;
+};
 
 
 #endif /* SYNTHPARAMETERS_H_ */
