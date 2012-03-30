@@ -37,7 +37,7 @@ Synthesizer::Synthesizer(EventBuffer & b, SynthGui & g): events(b), gui(g)
 
 	for (i = 0; i < POLYPHONY; i++) {
 		oscillator1[i] = new MainOscillator(osc1parameters);
-		lfo1[i] = new LowFrequencyOscillator();
+		lfo1[i] = new LowFrequencyOscillator(osc1parameters);
 	}
 
 	if (lfo1[POLYPHONY - 1] == NULL) {

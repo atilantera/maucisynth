@@ -49,6 +49,7 @@ private:
 	bool initTestData();
 	void setWaveform(WaveformType w);
 	void setADSR(unsigned int a, unsigned int d, float s, unsigned int r);
+	void printBuffer(const char * message, unsigned int samples);
 };
 
 

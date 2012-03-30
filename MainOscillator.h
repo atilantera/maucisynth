@@ -38,13 +38,6 @@ public:
 	EnvelopePhase getEnvelopePhase() const;
 
 protected:
-
-	// Parameters: modulation target and amount
-	LfoModulationTarget modulation;
-	LfoFrequencyType lfoFrequencyType;
-	float modulationAmount;
-	LowFrequencyOscillator * dedicatedLfo;
-
 	// Parameters: Amplitude envelope (ADSR curve) parameters.
 	// Attack, decay and release are in samples.
 	// Sustain is relative amplitude: 0..1.
@@ -54,6 +47,7 @@ protected:
 	unsigned int releaseTime;
 
 	OscillatorParameters & globalParameters;
+	LowFrequencyOscillator * dedicatedLfo;
 
 	// Dynamic parameter: Peak amplitude of the oscillator. MIDI note velocity
 	// determines this. It is coefficent between 0..1.
@@ -78,16 +72,28 @@ protected:
 	// pulseWidth is in radians (0 .. TWO_PI).
 	float pulseWidth;
 
+	// Methods synthesizeTriangleWave and synthesizeSawtooth and must have
+	// their own anglePerSample memorized. This is because with frequency
+	// modulation, those methods change angle increase only one or two
+	// times per cycle.
+	float triangleAnglePerSample;
+	float sawtoothAnglePerSample;
+
 	// Value of the last sample played. This must be memorized because
 	// if the note of the oscillator ends in Attack or Decay phases,
 	// the current peak amplitude is not sustain * peakAmplitude.
 	// Going directly from attack/decay to release results in audible crack.
 	float lastSample;
 
+	void setFrequency(float f);
+
 	void synthesizeFromWavetable(float outputBuffer[],
 		const float modulatorBuffer[]);
 
-	void synthesizeSawtooth(float outputBuffer[],
+	void synthesizeTriangleWave(float outputBuffer[],
+		const float modulatorBuffer[]);
+
+	void synthesizeSawtoothWave(float outputBuffer[],
 		const float modulatorBuffer[]);
 
 	void synthesizePulseWave(float outputBuffer[],

@@ -1,6 +1,6 @@
 Tehtävää aika- ja riippuvuusjärjestyksessä:
-  
-2. Synthesizer-luokka
+
+1. Synthesizer-luokka
 
    Havainto: Parametrimuutokset aiheuttavat massiivisia muutoksia
    monissa oskillaattoreissa. (Kokeile hinkata GUI:n slidereitä edestakaisin

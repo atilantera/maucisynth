@@ -8,7 +8,6 @@
 #include "Oscillator.h"
 
 float Oscillator::sineTable[WAVE_TABLE_LENGTH];
-float Oscillator::triangleTable[WAVE_TABLE_LENGTH];
 float Oscillator::absSineTable[WAVE_TABLE_LENGTH];
 float Oscillator::baseFrequency[128];
 bool  Oscillator::staticDataInitialized = false;
@@ -69,7 +68,7 @@ float Oscillator::getFrequency() const
 // Generates waveform tables
 void Oscillator::generateWaveTables()
 {
-	int i, b;
+	unsigned int i;
 	float x, increase;
 
 	// Sine wave
@@ -77,24 +76,6 @@ void Oscillator::generateWaveTables()
 	increase = 2 * M_PI / WAVE_TABLE_LENGTH;
 	for (i = 0; i < WAVE_TABLE_LENGTH; i++) {
 		sineTable[i] = sinf(x);
-		x += increase;
-	}
-
-	// Triangle wave
-	b = WAVE_TABLE_LENGTH / 4;
-	x = 0;
-	increase = 4.0 / (float)(WAVE_TABLE_LENGTH);
-	for (i = 0; i < b; i++) {
-		triangleTable[i] = x;
-		x += increase;
-	}
-	b *= 3;
-	for (; i < b; i++) {
-		triangleTable[i] = x;
-		x -= increase;
-	}
-	for (; i < WAVE_TABLE_LENGTH; i++) {
-		triangleTable[i] = x;
 		x += increase;
 	}
 

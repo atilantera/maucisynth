@@ -25,8 +25,13 @@ void LowFrequencyOscillator::generateSound(float buffer[]) {
 		// (int)(x + 0.5) is faster than calling lroundf()
 		buffer[i] = sineTable[(int)(angle * WAVE_TABLE_LENGTH + 0.5)];
 		angle += increase;
-		if (angle > 1) {
+		if (angle >= 1) {
 			angle -= 1;
 		}
 	}
+}
+
+void LowFrequencyOscillator::updateRelativeFrequency(float mainOscFrequency)
+{
+	setFrequency(globalParameters.lfoRelativeFrequency * mainOscFrequency);
 }

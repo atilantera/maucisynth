@@ -56,20 +56,27 @@ void LfoTest::testLFO() {
 	float soundBuffer[testBufferLength];
 
 	Oscillator::setBufferLength(testBufferLength);
+	Oscillator::setSamplerate(bufferLength);
+	parameters.lfoModulationTarget = NONE;
 
 	unsigned int i;
-	float x;
+	float x, testFrequency;
 
-	Oscillator::setSamplerate(bufferLength);
 
-	for (frequency = 1; frequency < 10; frequency *= 1.9) {
+
+	for (testFrequency = 1; testFrequency < 10; testFrequency *= 1.9) {
+		this->setFrequency(testFrequency);
 		generateSound(soundBuffer);
+
 		for (i = 0; i < testBufferLength; i++) {
-			x = (float)i / 40 * 2 * M_PI * frequency;
-			if (fabs(soundBuffer[i] - sinf(x)) > 0.01 * frequency) {
-				std::cout << "testLFO failed! frequency=" << frequency <<
-					" soundBuffer[" << i << "]=" << soundBuffer[i] <<
-					" sinf=" << sinf(x) << std::endl;
+
+			x = (float)i / 40 * 2 * M_PI * testFrequency;
+
+			if (fabs(soundBuffer[i] - sinf(x)) > 0.01 * testFrequency) {
+
+				std::cout << "testLFO failed! testFrequency=" <<
+					testFrequency << " soundBuffer[" << i << "]=" <<
+					soundBuffer[i] << " sinf=" << sinf(x) << std::endl;
 				return;
 			}
 		}

@@ -62,7 +62,6 @@ protected:
 
 	// Precalculated waveform tables
 	static float sineTable[WAVE_TABLE_LENGTH];
-	static float triangleTable[WAVE_TABLE_LENGTH];
 	static float absSineTable[WAVE_TABLE_LENGTH];
 
 	// Precalculated base frequencies for all MIDI keys

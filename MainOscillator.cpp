@@ -71,7 +71,7 @@ void MainOscillator::noteOn(unsigned char noteKey, unsigned char noteVelocity)
 	peakAmplitude = (float)noteVelocity / 127;
 
 	if (globalParameters.lfoFrequencyType == RELATIVE && dedicatedLfo != NULL) {
-		dedicatedLfo->setRelativeFrequency(frequency);
+		dedicatedLfo->updateRelativeFrequency(frequency);
 	}
 }
 
@@ -110,8 +110,7 @@ const float modulatorBuffer[], bool & noteFinished)
 		break;
 
 	case TRIANGLE:
-		wavetable = Oscillator::triangleTable;
-		synthesizeFromWavetable(outputBuffer, modulatorBuffer);
+		synthesizeTriangleWave(outputBuffer, modulatorBuffer);
 		break;
 
 	case ABS_SINE:
@@ -120,7 +119,7 @@ const float modulatorBuffer[], bool & noteFinished)
 		break;
 
 	case SAWTOOTH:
-		synthesizeSawtooth(outputBuffer, modulatorBuffer);
+		synthesizeSawtoothWave(outputBuffer, modulatorBuffer);
 		break;
 
 	case PULSE:
@@ -137,6 +136,13 @@ const float modulatorBuffer[], bool & noteFinished)
 	noteFinished = (envelopePhase == OFF);
 }
 
+void MainOscillator::setFrequency(float f)
+{
+	((Oscillator *)this)->setFrequency(f);
+	triangleAnglePerSample = anglePerSample;
+	sawtoothAnglePerSample = anglePerSample;
+}
+
 void MainOscillator::synthesizeFromWavetable(float outputBuffer[],
 const float modulatorBuffer[])
 {
@@ -146,9 +152,9 @@ const float modulatorBuffer[])
 		for (i = 0; i < bufferLength; i++) {
 			outputBuffer[i]
 				= wavetable[(int)(angle * WAVE_TABLE_LENGTH + 0.5)];
-			angle += anglePerSample * (1 + modulationAmount
+			angle += anglePerSample * (1 + globalParameters.lfoModulationAmount
 				* modulatorBuffer[i]);
-			if (angle > 1) {
+			if (angle >= 1) {
 				angle -= 1;
 			}
 		}
@@ -158,25 +164,72 @@ const float modulatorBuffer[])
 			outputBuffer[i]
 				= wavetable[(int) (angle * WAVE_TABLE_LENGTH + 0.5)];
 			angle += anglePerSample;
-			if (angle > 1) {
+			if (angle >= 1) {
 				angle -= 1;
 			}
 		}
 	}
 }
 
-void MainOscillator::synthesizeSawtooth(float outputBuffer[],
+void MainOscillator::synthesizeTriangleWave(float outputBuffer[],
+	const float modulatorBuffer[])
+{
+	unsigned int i;
+	if (globalParameters.lfoModulationTarget == FREQUENCY) {
+		for (i = 0; i < bufferLength; i++) {
+			if (angle < 0.25) {
+				outputBuffer[i] = 4 * angle;
+			}
+			else {
+				if (angle < 0.75) {
+					outputBuffer[i] = 2 - 4 * angle;
+				}
+				else {
+					outputBuffer[i] = -4 + 4 * angle;
+				}
+			}
+			angle += triangleAnglePerSample;
+			if (angle >= 1) {
+				angle -= 1;
+				triangleAnglePerSample = anglePerSample
+					* (1 + globalParameters.lfoModulationAmount
+					* modulatorBuffer[i]);
+			}
+		}
+	}
+	else {
+		for (i = 0; i < bufferLength; i++) {
+			if (angle < 0.25) {
+				outputBuffer[i] = 4 * angle;
+			}
+			else {
+				if (angle < 0.75) {
+					outputBuffer[i] = 2 - 4 * angle;
+				}
+				else {
+					outputBuffer[i] = -4 + 4 * angle;
+				}
+			}
+			angle += anglePerSample;
+			if (angle >= 1) {
+				angle -= 1;
+			}
+		}
+	}
+}
+
+void MainOscillator::synthesizeSawtoothWave(float outputBuffer[],
 const float modulatorBuffer[])
 {
 	unsigned int i;
 
 	if (globalParameters.lfoModulationTarget == FREQUENCY) {
-		float angleCoefficent = anglePerSample *
-				(1 + globalParameters.lfoModulationAmount);
 		for (i = 0; i < bufferLength; i++) {
 			outputBuffer[i] = angle * 2 - 1;
-			angle += angleCoefficent * modulatorBuffer[i];
-			if (angle > 1) {
+			angle += sawtoothAnglePerSample;
+			if (angle >= 1) {
+				sawtoothAnglePerSample = anglePerSample * (1 +
+					globalParameters.lfoModulationAmount * modulatorBuffer[i]);
 				angle -= 1;
 			}
 		}
@@ -185,7 +238,7 @@ const float modulatorBuffer[])
 		for (i = 0; i < bufferLength; i++) {
 			outputBuffer[i] = angle * 2 - 1;
 			angle += anglePerSample;
-			if (angle > 1) {
+			if (angle >= 1) {
 				angle -= 1;
 			}
 		}
@@ -206,7 +259,7 @@ const float modulatorBuffer[])
 				outputBuffer[i] = -1;
 			}
 			angle += anglePerSample;
-			if (angle > 1) {
+			if (angle >= 1) {
 				angle -= 1;
 				pulseWidth = 0.5 *
 					(1 + globalParameters.lfoModulationAmount *
@@ -214,7 +267,7 @@ const float modulatorBuffer[])
 			}
 		}
 	}
-	else if (modulation == FREQUENCY) {
+	else if (globalParameters.lfoModulationTarget == FREQUENCY) {
 		for (i = 0; i < bufferLength; i++) {
 			if (angle < 0.5) {
 				outputBuffer[i] = 1;
@@ -224,7 +277,7 @@ const float modulatorBuffer[])
 			}
 			angle += anglePerSample * (1 +
 				globalParameters.lfoModulationAmount * modulatorBuffer[i]);
-			if (angle > 1) {
+			if (angle >= 1) {
 				angle -= 1;
 			}
 		}
@@ -238,7 +291,7 @@ const float modulatorBuffer[])
 				outputBuffer[i] = -1;
 			}
 			angle += anglePerSample;
-			if (angle > 1) {
+			if (angle >= 1) {
 				angle -= 1;
 			}
 		}

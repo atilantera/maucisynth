@@ -16,9 +16,7 @@ public:
 	LowFrequencyOscillator(OscillatorParameters & p);
 	virtual ~LowFrequencyOscillator() {}
 
-	void setModulationTarget(LfoModulationTarget target);
-	void setRelativeFrequency(float mainOscFrequency);
-	void setRelativeFrequencyCoefficent(float c);
+	void updateRelativeFrequency(float mainOscFrequency);
 	void generateSound(float buffer[]);
 
 private:
