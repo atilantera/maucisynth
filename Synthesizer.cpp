@@ -24,6 +24,8 @@ Synthesizer::Synthesizer(EventBuffer & b, SynthGui & g): events(b), gui(g)
 	oscillatorBuffer = NULL;
 	lfoBuffer = NULL;
 
+	mainVolume = 1;
+
 	initJack();
 	Oscillator::setSamplerate(samplerate);
 	Oscillator::setBufferLength(bufferLength);
@@ -156,6 +158,52 @@ void Synthesizer::generateSound(jack_nframes_t nframes)
 {
 	float * outputBuffer =
 		(float *) jack_port_get_buffer(jackOutputPort, nframes);
+
+	std::memset(outputBuffer, 0, nframes * sizeof(float));
+
+	// Oscillator group 1
+	bool useGlobalLfo = false;
+	bool useDedicatedLfo = false;
+	if (osc1parameters.lfoModulationTarget == FREQUENCY ||
+		osc1parameters.lfoModulationTarget == PULSE_WIDTH)
+	{
+		useGlobalLfo = true;
+	}
+	if (osc1parameters.lfoModulationTarget == AMPLITUDE) {
+		if (osc1parameters.lfoFrequencyType == RELATIVE) {
+			useDedicatedLfo = true;
+		}
+		else {
+			useGlobalLfo = true;
+		}
+	}
+
+	if (useGlobalLfo) {
+		// TODO
+	}
+
+	// TODO: remove this line when ready for LFO testing
+	osc1parameters.lfoModulationTarget = NONE;
+
+	unsigned int oscNum, i;
+	bool noteFinished;
+	for (oscNum = 0; oscNum < POLYPHONY; oscNum++) {
+		if (oscillator1[oscNum]->getEnvelopePhase() != OFF) {
+			if (useDedicatedLfo) {
+				// TODO
+			}
+			oscillator1[oscNum]->generateSound(oscillatorBuffer, lfoBuffer,
+				noteFinished);
+			for (i = 0; i < nframes; i++) {
+				outputBuffer[i] += oscillatorBuffer[i];
+			}
+		}
+	}
+
+	float mixingCoefficent = mainVolume / POLYPHONY;
+	for (i = 0; i < nframes; i++) {
+		outputBuffer[i] *= mixingCoefficent;
+	}
 }
 
 int Synthesizer::updateSamplerate(jack_nframes_t nframes, void *arg)
@@ -240,9 +288,6 @@ void Synthesizer::processEvents()
 void Synthesizer::processNoteOn(unsigned char key, unsigned char velocity,
 NoteSource source)
 {
-	std::cout << "Synthesizer.processNoteOn(" << (int)key << "," <<
-		(int)velocity << "," << (int)source << ")" << std::endl;
-
 	// First try to find and retrigger an oscillator group with the same
 	// note key and note source
 	unsigned int i;
@@ -268,8 +313,6 @@ NoteSource source)
 
 void Synthesizer::processNoteOff(unsigned char key, NoteSource source)
 {
-	std::cout << "Synthesizer.processNoteOff(" << (int)key << "," <<
-		(int)source << ")" << std::endl;
 	for (unsigned int i = 0; i < POLYPHONY; i++) {
 		if (noteKey[i] == key && noteSource[i] == source) {
 			oscillator1[i]->noteOff();
@@ -279,8 +322,6 @@ void Synthesizer::processNoteOff(unsigned char key, NoteSource source)
 
 void Synthesizer::processFastMute(NoteSource source)
 {
-	std::cout << "Synthesizer.processFastMute(" << (int)source << ")" <<
-		std::endl;
 	for (unsigned int i = 0; i < POLYPHONY; i++) {
 		if (noteSource[i] == source) {
 			oscillator1[i]->muteFast();

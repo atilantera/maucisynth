@@ -8,6 +8,7 @@
 #ifndef SYNTHESIZER_H_
 #define SYNTHESIZER_H_
 
+#include <cstring>
 #include <iostream>
 #include <jack/jack.h>
 #include <jack/thread.h>
@@ -21,7 +22,7 @@
 #include "SynthGui.h"
 #include "SynthParameters.h"
 
-const unsigned int POLYPHONY = 16;
+const unsigned int POLYPHONY = 2;
 
 class Synthesizer {
 public:
@@ -63,6 +64,9 @@ private:
 	float lfo1relativeFrequency;
 
 	LowpassFilter filter;
+
+	// Master volume of the synthesizer output
+	float mainVolume;
 
 	void initJack();
 	static int jackCallback(jack_nframes_t nframes, void * arg);

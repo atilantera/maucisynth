@@ -88,6 +88,8 @@ const unsigned int MaxReleaseTime   = 3000;
 // LowFrequencyOscillator combination.
 class OscillatorParameters {
 public:
+	OscillatorParameters();
+
 	WaveformType waveform;
 
 	// Attack, decay and release times are in milliseconds.

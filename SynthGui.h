@@ -11,11 +11,9 @@
 #ifndef SYNTHGUI_H_
 #define SYNTHGUI_H_
 
-#include <cstdlib>
-#include <ctime>
 #include <pthread.h>
 #include <iostream>
-#include <string>
+
 #include <gtk-2.0/gdk/gdkkeysyms.h>
 #include <gtk-2.0/gtk/gtk.h>
 #include "EventBuffer.h"

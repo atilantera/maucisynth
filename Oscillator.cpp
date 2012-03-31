@@ -91,7 +91,7 @@ void Oscillator::generateWaveTables()
 // Generates base frequencies for every MIDI key.
 void Oscillator::generateBaseFrequencies()
 {
-	float semitone = powf(2, (float)1/12);
+	float semitone = powf(2, 1.0 / 12);
 	float octaveCoefficent;
 	int i, j;
 

@@ -11,10 +11,10 @@ all: main
 	cd tests && make && cd ..
 	
 main: EventBuffer.o main.o LowFrequencyOscillator.o LowpassFilter.o \
-	MainOscillator.o Oscillator.o Synthesizer.o SynthGui.o 
+	MainOscillator.o Oscillator.o Synthesizer.o SynthGui.o SynthParameters.o
 	$(LD) $(LIBS) EventBuffer.o main.o LowFrequencyOscillator.o \
 	LowpassFilter.o MainOscillator.o Oscillator.o Synthesizer.o SynthGui.o \
-	-o maucisynth
+	SynthParameters.o -o maucisynth
 
 EventBuffer.o: EventBuffer.cpp EventBuffer.h tests/testing.h
 	$(CC) $(CFLAGS) -c EventBuffer.cpp
@@ -39,6 +39,9 @@ Synthesizer.o: Synthesizer.cpp Synthesizer.h SynthParameters.h
 
 SynthGui.o: SynthGui.cpp SynthGui.h
 	$(CC) $(CFLAGS) -c SynthGui.cpp
+
+SynthParameters.o: SynthParameters.cpp SynthParameters.h
+	$(CC) $(CFLAGS) -c SynthParameters.cpp
 
 clean:
 	$(RM) *.o

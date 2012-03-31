@@ -2,32 +2,15 @@ Tehtävää aika- ja riippuvuusjärjestyksessä:
 
 1. Synthesizer-luokka
 
-   Havainto: Parametrimuutokset aiheuttavat massiivisia muutoksia
-   monissa oskillaattoreissa. (Kokeile hinkata GUI:n slidereitä edestakaisin
-   ja katso, kun CPU utilization pomppaa. Tosin niin pomppaa C-versiossakin.)
+   Missäs vaiheessa LFO:iden taajuudet päivitetään?
+   Nyt parametrinkäsittelyssä taajuus päivittyy vain osc1parameters-
+   kenttiin!
 
-   Mitä tehdä: kokeile ajaa maucisynth gprofilla. Vika ei ole ainakaan
-   Synthesizer-luokassa, koska jos Synthesizer::processEvents() jätetään
-   kokonaan kutsumatta, niin CPU:n pomppauksessa ei tapahtu merkittävää
-   muutosta.
-       Lisähuomio: kun CPU pomppaa, niin 30-40% resursseista vie
-   maucisynth, 20% xorg ja 11% qjackctl. Jännää. Muuten xorg ja qjackctl
-   vievät vain pari prosenttia CPU-aikaa.
-
-   Tietenkin voisi tehdä MainOscillatoriin vakioviittauksen johonkin
-   Synthesizerissä olevaan parametristruktiin, jossa on ADSR ja moduloinnit.
-       Ongelma 1: MainOscillator.wavetable
-       Ratkaisu: uusi kenttä: MainOscillator.currentWaveform.
-                MainOscillator.generateSound()iin vertailu: jos
-                currentWaveform != parametrit.waveform, niin päivitä
-                currentWaveform ja wavetable.
-
-       Ongelma 2: yksikkötestit menisivät aika lailla uusiksi, kun
-       MainOscillatorista poistuu parametrinmuutosmetodit.
-       Ratkaisu: säästetään MainOscillatorin ikiomat ADSR- ja modulointi-
-       parametrit. Parametrit päivitetään tarvittaessa Synthesizerin
-       yleisestä parametristruktista. 
-
+   * Parametri- ja nuottieventtien käsittelyt ovat jo valmiit.
+   Metodi generateSound: seuraavaksi LFO toimimaan.
+     
+       
+   
 
    Kun LFO:n taajuus riippuu pääoskillaattorin taajuudesta, niin
    pääoskillaattorin pärähtäessä soimaan se asettaa LFO:n taajuuden.

@@ -8,7 +8,7 @@
 #ifndef OSCILLATOR_H_
 #define OSCILLATOR_H_
 
-#include <math.h>
+#include <cmath>
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
@@ -20,8 +20,8 @@
 // high-resolution waves at 8 Hz when samplerate is 44,1 kHz.
 // 4096 samples will fit nicely to four 4k memory pages when
 // sizeof(float) == 4.
-//const int WAVE_TABLE_LENGTH = 4096;
-const int WAVE_TABLE_LENGTH = 12000;
+//const unsigned int WAVE_TABLE_LENGTH = 4096;
+const unsigned int WAVE_TABLE_LENGTH = 12000;
 
 class Oscillator {
 public:

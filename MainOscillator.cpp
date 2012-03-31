@@ -63,6 +63,7 @@ void MainOscillator::noteOn(unsigned char noteKey, unsigned char noteVelocity)
 	lastSample = 0;
 	setFrequency(baseFrequency[noteKey]);
 
+	envelopePhase = ATTACK;
 	envelopePhaseTime = 0;
 
 	if (noteVelocity > 127) {
@@ -418,16 +419,16 @@ unsigned int MainOscillator::applyDecay(float outputBuffer[], unsigned int i)
 
 unsigned int MainOscillator::applyRelease(float outputBuffer[], unsigned int i)
 {
+	if (previousEnvelopePhase != RELEASE) {
+		envelopePhaseTime = 0;
+		previousEnvelopePhase = RELEASE;
+	}
+
 	unsigned int samplesLeft = releaseTime - envelopePhaseTime;
 	float relativeTime = (float)envelopePhaseTime / releaseTime;
 	float timeIncrease = 1.0 / releaseTime;
 	float b = 1 / (expf(-steepness) - 1);
 	float amplitude;
-
-	if (previousEnvelopePhase != RELEASE) {
-		envelopePhaseTime = 0;
-		previousEnvelopePhase = RELEASE;
-	}
 
 	if (samplesLeft > bufferLength) {
 		envelopePhaseTime += bufferLength - i;
