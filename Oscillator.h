@@ -20,8 +20,7 @@
 // high-resolution waves at 8 Hz when samplerate is 44,1 kHz.
 // 4096 samples will fit nicely to four 4k memory pages when
 // sizeof(float) == 4.
-//const unsigned int WAVE_TABLE_LENGTH = 4096;
-const unsigned int WAVE_TABLE_LENGTH = 12000;
+const unsigned int WAVE_TABLE_LENGTH = 4096;
 
 class Oscillator {
 public:
@@ -34,6 +33,8 @@ public:
 	void setFrequency(float frequency);
 	float getFrequency() const;
 	virtual void generateSound() { }
+
+	static void debugCheckTables(const char * message);
 
 protected:
 	void generateWaveTables();

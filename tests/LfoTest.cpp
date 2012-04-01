@@ -25,7 +25,7 @@ void LfoTest::testAll()
 void LfoTest::testSineTable() {
 	int step = WAVE_TABLE_LENGTH / 32;
 	float x;
-	for (int i = 0; i < WAVE_TABLE_LENGTH; i += step) {
+	for (unsigned int i = 0; i < WAVE_TABLE_LENGTH; i += step) {
 		x = i * 2 * M_PI / WAVE_TABLE_LENGTH;
 		if (fabs(sineTable[i] - sinf(x)) > 0.002) {
 			std::cout << "LfoTest::testSineTable failed!" << std::endl;

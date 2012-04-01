@@ -8,6 +8,7 @@
 #include "Synthesizer.h"
 
 Synthesizer * Synthesizer::synthInstance = NULL;
+bool Synthesizer::callbackAlreadyRunning = false;
 
 Synthesizer::Synthesizer(EventBuffer & b, SynthGui & g): events(b), gui(g)
 {
@@ -15,6 +16,7 @@ Synthesizer::Synthesizer(EventBuffer & b, SynthGui & g): events(b), gui(g)
 
 	synthInstance = this;
 	synthIsRunning = false;
+
 	samplerate = 1;
 	bufferLength = 0;
 	jackCallbackLock = PTHREAD_MUTEX_INITIALIZER;
@@ -121,9 +123,17 @@ void Synthesizer::initJack()
 
 int Synthesizer::jackCallback(jack_nframes_t nframes, void * arg)
 {
+    if (callbackAlreadyRunning) {
+        std::cout << "Synthesizer::jackCallback: another callback running!"
+            << std::endl;
+        return 0;
+    }
+
+    callbackAlreadyRunning = true;
 	synthInstance->processEvents();
 	synthInstance->checkJackExceptions();
 	synthInstance->generateSound(nframes);
+    callbackAlreadyRunning = false;
 	return 0;
 }
 
@@ -295,7 +305,7 @@ NoteSource source)
 		if (noteKey[i] == key && noteSource[i] == source &&
 			oscillator1[i]->getEnvelopePhase() != OFF)
 		{
-			oscillator1[i]->noteOn(key, velocity);
+			oscillator1[i]->noteOn(key, velocity, true);
 			return;
 		}
 	}
@@ -303,7 +313,7 @@ NoteSource source)
 	// Then try to find a free oscillator group
 	for (i = 0; i < POLYPHONY; i++) {
 		if (oscillator1[i]->getEnvelopePhase() == OFF) {
-			oscillator1[i]->noteOn(key, velocity);
+			oscillator1[i]->noteOn(key, velocity, false);
 			noteKey[i] = key;
 			noteSource[i] = source;
 			return;

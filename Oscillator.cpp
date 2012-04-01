@@ -56,7 +56,6 @@ void Oscillator::setFrequency(float f)
 
 	float randomness = (float)(random() % 2048 - 1024) / 1024;
 	frequency = f * (1 + randomDetune * randomness);
-	angle = 0;
 	anglePerSample = frequency / samplerate;
 }
 
@@ -65,6 +64,27 @@ float Oscillator::getFrequency() const
 	return frequency;
 }
 
+
+void Oscillator::debugCheckTables(const char * message)
+{
+	std::cout << "Oscillator::debugCheckTables(" << message << "): ";
+	unsigned int i;
+
+	for (i = 0; i < WAVE_TABLE_LENGTH; i++) {
+		if (sineTable[i] < -1 && sineTable[i] > 1) {
+			std::cout << "sineTable[" << i << "] = " << sineTable[i] << "!" <<
+				std::endl;
+			return;
+		}
+		if (absSineTable[i] < -1 || absSineTable[i] > 1) {
+			std::cout << "absSineTable[" << i << "] = " << absSineTable[i]
+			    << "!" << std::endl;
+			return;
+		}
+
+	}
+	std::cout << "ok." << std::endl;
+}
 // Generates waveform tables
 void Oscillator::generateWaveTables()
 {
@@ -83,7 +103,7 @@ void Oscillator::generateWaveTables()
 	x = 0;
 	increase = M_PI / WAVE_TABLE_LENGTH;
 	for (i = 0; i < WAVE_TABLE_LENGTH; i++) {
-		absSineTable[i] = -1 + fabs(sinf(x)) * 2;
+		absSineTable[i] = -1 + 2 * fabs(sinf(x));
 		x += increase;
 	}
 }
@@ -91,48 +111,46 @@ void Oscillator::generateWaveTables()
 // Generates base frequencies for every MIDI key.
 void Oscillator::generateBaseFrequencies()
 {
-	float semitone = powf(2, 1.0 / 12);
-	float octaveCoefficent;
-	int i, j;
 
 	// Standard A key above piano middle C is 440 Hz.
 	// It is assigned to MIDI key number 69 (between 0 and 127).
+	baseFrequency[9]  = 13.75;
+	baseFrequency[21] = 27.5;
+	baseFrequency[33] = 55;
+	baseFrequency[45] = 110;
+	baseFrequency[57] = 220;
 	baseFrequency[69] = 440;
+	baseFrequency[81] = 880;
+	baseFrequency[93] = 1760;
+	baseFrequency[105] = 3520;
+	baseFrequency[117] = 7040;
 
-	// notes 70..80
-	for (i = 0; i < 11; i++) {
-		baseFrequency[70 + i] = baseFrequency[69 + i] * semitone;
-	}
+	float semitoneUp = powf(2, 1.0 / 12);
+	float semitoneDown = 1 / semitoneUp;
+	float f;
+	int i, j;
 
-	// notes 9 .. 68
-	octaveCoefficent = 0.5;
-	for (j = 1; j < 7; j++) {
-		for (i = 0; i < 12; i++) {
-			baseFrequency[69 - j * 12 + i] =
-			    baseFrequency[69 + i] * octaveCoefficent;
+	// Keys 0..119
+	for (i = 0; i <= 108; i += 12) {
+
+		f = baseFrequency[i + 9];
+		for (j = 8; j >= 0; j--) {
+			f *= semitoneDown;
+			baseFrequency[i + j] = f;
 		}
-		octaveCoefficent *= 0.5;
-	}
 
-	// notes 81 .. 116
-	octaveCoefficent = 2;
-	for (j = 1; j < 4; j++) {
-		for (i = 0; i < 12; i++) {
-			baseFrequency[69 + j * 12 + i] =
-				baseFrequency[69 + i] * octaveCoefficent;
+		f = baseFrequency[i + 9];
+		for (j = 10; j < 12; j++) {
+			f *= semitoneUp;
+			baseFrequency[i + j] = f;
 		}
-		octaveCoefficent *= 2;
+
 	}
 
-	// notes 117 .. 127
-	octaveCoefficent = 16;
-	for (i = 0; i < 11; i++) {
-		baseFrequency[117 + i] = baseFrequency[69 + i] * octaveCoefficent;
-	}
-
-	// notes 0..8
-	octaveCoefficent = (float)1/32;
-	for (i = 0; i < 12; i++) {
-		baseFrequency[i] = baseFrequency[60 + i] * octaveCoefficent;
+	// Keys 120..127
+	f = baseFrequency[120];
+	for (i = 121; i < 128; i++) {
+		f *= semitoneUp;
+		baseFrequency[i] = f;
 	}
 }

@@ -18,9 +18,12 @@
 #include "LowFrequencyOscillator.h"
 #include "SynthParameters.h"
 
+#define USE_OPTIMIZATIONS 1
+
 #include "tests/testing.h"
 
-enum EnvelopePhase { ATTACK, DECAY, SUSTAIN, RELEASE, OFF, FAST_MUTE };
+enum EnvelopePhase { ATTACK, DECAY, SUSTAIN, RELEASE, OFF, FAST_MUTE,
+    RETRIGGER };
 
 class MainOscillator : public Oscillator {
 public:
@@ -28,7 +31,8 @@ public:
 	virtual ~MainOscillator();
 
 	void setDedicatedLfo(LowFrequencyOscillator * lfo);
-	void noteOn(unsigned char noteKey, unsigned char noteVelocity);
+	void noteOn(unsigned char noteKey, unsigned char noteVelocity,
+        bool retrigger);
 	void noteOff();
 	void muteFast();
 
@@ -53,15 +57,28 @@ protected:
 	// determines this. It is coefficent between 0..1.
 	float peakAmplitude;
 
-
 	// Field wavetable depends on field waveform. See setWaveform().
 	// It points to sineTable[] or triangleTable[] or
 	// absSineTable[] in class Oscillator.
 	float * wavetable;
 
-	EnvelopePhase envelopePhase;         // osc_envelope_phase
-	EnvelopePhase previousEnvelopePhase; // osc_precious_envelope_phase
-	float envelopeAmplitude;   // osc_envelope_amplitude
+    // envelopePhase is the current ADSR curve phase.
+   	EnvelopePhase envelopePhase;
+
+    // previousEnvelopePhase is used to determine if envelopePhase
+    // changed to RELEASE from ATTACK or DECAY instead of SUSTAIN.
+    // This happens when the duration of the note is shorter than
+    // duration of attack and decay phases together (i.e. method
+    // noteOff() is called when envelopePhase = ATTACK or DECAY.
+	EnvelopePhase previousEnvelopePhase;
+
+    // Last amplitude value of the current envelope curve played.
+    // This is needed for appropriate transition from attack or decay
+    // phase to release phase.
+	float envelopeAmplitude;
+
+    // applySustain needs also this.
+    float previousEnvelopeAmplitude;
 
 	// Playing time of current envelope phase (in samples).
 	// Used to determine when envelope phase changes to another
@@ -105,10 +122,12 @@ protected:
 	void applyEnvelope(float outputBuffer[]);
 
 	unsigned int applyAttack(float outputBuffer[], unsigned int i);
+    unsigned int applyRetrigger(float outputBuffer[]);
 	unsigned int applyDecay(float outputBuffer[], unsigned int i);
 	unsigned int applyRelease(float outputBuffer[], unsigned int i);
 
 	void applyFastMute(float outputBuffer[]);
+
 
 };
 

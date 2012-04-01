@@ -1,6 +1,6 @@
 CC=g++
 LD=g++
-CFLAGS= -std=c++0x -Wall -Wextra -pedantic -g -pg \
+CFLAGS= -std=c++0x -Wall -Wextra -pedantic -march=athlon-xp -O2 -g -pg \
         `pkg-config --cflags gtk+-2.0` 
 LIBS=-ljack -lm `pkg-config --libs gtk+-2.0` -pg
 RM=rm -f

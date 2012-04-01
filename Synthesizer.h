@@ -22,7 +22,7 @@
 #include "SynthGui.h"
 #include "SynthParameters.h"
 
-const unsigned int POLYPHONY = 2;
+const unsigned int POLYPHONY = 8;
 
 class Synthesizer {
 public:
@@ -36,6 +36,7 @@ private:
 	jack_port_t * jackOutputPort;
 	jack_client_t * jackClient;
 	bool synthIsRunning;
+    static bool callbackAlreadyRunning;
 	static Synthesizer * synthInstance;
 	unsigned int samplerate;
 	unsigned int bufferLength;

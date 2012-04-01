@@ -14,18 +14,19 @@
 // curve steepness in envelope curve
 const float steepness = 4;
 
-const int muteLength = 16;
+const unsigned int muteLength = 16;
+const unsigned int retriggerLength = 64;
 
 MainOscillator::MainOscillator(OscillatorParameters & p) :
 	globalParameters(p)
 {
-
 	wavetable = sineTable;
 	dedicatedLfo = NULL;
 
 	envelopePhase = OFF;
 	previousEnvelopePhase = OFF;
 	envelopeAmplitude = 0;
+    previousEnvelopeAmplitude = 0;
 	attackTime = MinAttackTime;
 	decayTime = MinDecayTime;
 	sustainVolume = MaxSustainVolume;
@@ -49,7 +50,8 @@ void MainOscillator::setDedicatedLfo(LowFrequencyOscillator * lfo)
 
 // Sets oscillator base frequency and maximum amplitude.
 // Sets envelope curve to the beginning of attack phase.
-void MainOscillator::noteOn(unsigned char noteKey, unsigned char noteVelocity)
+void MainOscillator::noteOn(unsigned char noteKey, unsigned char noteVelocity,
+    bool retrigger)
 {
 	if (noteKey > 127 || noteVelocity == 0) {
 		return;
@@ -60,10 +62,16 @@ void MainOscillator::noteOn(unsigned char noteKey, unsigned char noteVelocity)
 	sustainVolume = globalParameters.sustainVolume;
 	releaseTime = globalParameters.releaseTime * 0.001 * samplerate;
 
-	lastSample = 0;
 	setFrequency(baseFrequency[noteKey]);
+    if (retrigger == true) {
+        envelopePhase = RETRIGGER;
+    }
+    else {
+        envelopePhase = ATTACK;
+        lastSample = 0;
+        angle = 0;
+    }
 
-	envelopePhase = ATTACK;
 	envelopePhaseTime = 0;
 
 	if (noteVelocity > 127) {
@@ -74,6 +82,7 @@ void MainOscillator::noteOn(unsigned char noteKey, unsigned char noteVelocity)
 	if (globalParameters.lfoFrequencyType == RELATIVE && dedicatedLfo != NULL) {
 		dedicatedLfo->updateRelativeFrequency(frequency);
 	}
+
 }
 
 // Sets envelope curve to the beginning of release phase.
@@ -147,12 +156,41 @@ void MainOscillator::setFrequency(float f)
 void MainOscillator::synthesizeFromWavetable(float outputBuffer[],
 const float modulatorBuffer[])
 {
-	unsigned int i;
+#if USE_OPTIMIZATIONS
+	float * endPtr = outputBuffer + bufferLength;
+	float tableLength = WAVE_TABLE_LENGTH;
+	float index = angle * tableLength;
+	float indexIncrease = anglePerSample * tableLength;
 
 	if (globalParameters.lfoModulationTarget == FREQUENCY) {
+		float modAmount = globalParameters.lfoModulationAmount;
+		while (outputBuffer < endPtr) {
+			if (index >= tableLength) {
+				index -= tableLength;
+			}
+
+			*outputBuffer++ = wavetable[(int)index];
+			index += indexIncrease * (1 + modAmount * (*modulatorBuffer++));
+		}
+		angle = index / tableLength;
+	}
+	else {
+		while (outputBuffer < endPtr) {
+			if (index >= tableLength) {
+				index -= tableLength;
+			}
+			*outputBuffer = wavetable[(int)index];
+			outputBuffer++;
+			index += indexIncrease;
+		}
+		angle = index / tableLength;
+	}
+#else
+
+	unsigned int i;
+	if (globalParameters.lfoModulationTarget == FREQUENCY) {
 		for (i = 0; i < bufferLength; i++) {
-			outputBuffer[i]
-				= wavetable[(int)(angle * WAVE_TABLE_LENGTH + 0.5)];
+			outputBuffer[i] = wavetable[(int)(angle * WAVE_TABLE_LENGTH)];
 			angle += anglePerSample * (1 + globalParameters.lfoModulationAmount
 				* modulatorBuffer[i]);
 			if (angle >= 1) {
@@ -161,15 +199,18 @@ const float modulatorBuffer[])
 		}
 	}
 	else {
+		unsigned int index;
 		for (i = 0; i < bufferLength; i++) {
-			outputBuffer[i]
-				= wavetable[(int) (angle * WAVE_TABLE_LENGTH + 0.5)];
+			index = angle * WAVE_TABLE_LENGTH;
+			outputBuffer[i] = wavetable[(int)index];
 			angle += anglePerSample;
 			if (angle >= 1) {
 				angle -= 1;
 			}
 		}
 	}
+
+#endif // USE_OPTIMIZATIONS
 }
 
 void MainOscillator::synthesizeTriangleWave(float outputBuffer[],
@@ -236,6 +277,19 @@ const float modulatorBuffer[])
 		}
 	}
 	else {
+#if USE_OPTIMIZATIONS
+		float * endPtr = outputBuffer + bufferLength;
+		float sawtoothAngle = angle * 2 - 1;
+		float sawtoothIncrease = anglePerSample * 2;
+		while (outputBuffer < endPtr) {
+			*outputBuffer++ = sawtoothAngle;
+			sawtoothAngle += sawtoothIncrease;
+			if (sawtoothAngle >= 1) {
+				sawtoothAngle -= 2;
+			}
+		}
+		angle = (sawtoothAngle + 1) * 0.5;
+#else
 		for (i = 0; i < bufferLength; i++) {
 			outputBuffer[i] = angle * 2 - 1;
 			angle += anglePerSample;
@@ -243,7 +297,9 @@ const float modulatorBuffer[])
 				angle -= 1;
 			}
 		}
+#endif // USE_OPTIMIZATIONS
 	}
+
 }
 
 void MainOscillator::synthesizePulseWave(float outputBuffer[],
@@ -313,8 +369,9 @@ const float modulatorBuffer[])
 void MainOscillator::applyEnvelope(float outputBuffer[])
 {
 	unsigned int i = 0;
+    float c;
 
-	while (i < bufferLength) {
+    while (i < bufferLength) {
 		switch (envelopePhase) {
 
 		case OFF:
@@ -327,14 +384,20 @@ void MainOscillator::applyEnvelope(float outputBuffer[])
 			i = applyAttack(outputBuffer, i);
 			break;
 
+        case RETRIGGER:
+            i = applyRetrigger(outputBuffer);
+            break;
+
 		case DECAY:
 			i = applyDecay(outputBuffer, i);
 			break;
 
 		case SUSTAIN:
+            c = sustainVolume;
 			for (; i < bufferLength; i++) {
-				outputBuffer[i] *= sustainVolume;
+				outputBuffer[i] *= c;
 			}
+            envelopeAmplitude = c;
 			break;
 
 		case RELEASE:
@@ -357,7 +420,7 @@ unsigned int MainOscillator::applyAttack(float outputBuffer[], unsigned int i)
 	float relativeTime = (float)envelopePhaseTime / attackTime;
 	float timeIncrease = 1.0 / (attackTime - 1);
 	float b = 1 / (1 - expf(-steepness));
-	float amplitude;
+	float amplitude = 0;
 
 	if (samplesLeft > bufferLength) {
 		for (; i < bufferLength; i++) {
@@ -379,8 +442,26 @@ unsigned int MainOscillator::applyAttack(float outputBuffer[], unsigned int i)
 		envelopePhaseTime = 0;
 	}
 	envelopeAmplitude = amplitude;
+	previousEnvelopePhase = ATTACK;
 
 	return i;
+}
+
+unsigned int MainOscillator::applyRetrigger(float outputBuffer[])
+{
+	unsigned int i;
+	float decrease = envelopeAmplitude / retriggerLength;
+	float amplitude = envelopeAmplitude;
+
+    for (i = 0; i < retriggerLength; i++) {
+		outputBuffer[i] *= amplitude;
+		amplitude -= decrease;
+    }
+	envelopePhase = ATTACK;
+	previousEnvelopePhase = RETRIGGER;
+	envelopePhaseTime = 0;
+    return retriggerLength;
+
 }
 
 unsigned int MainOscillator::applyDecay(float outputBuffer[], unsigned int i)
@@ -389,7 +470,7 @@ unsigned int MainOscillator::applyDecay(float outputBuffer[], unsigned int i)
 	float relativeTime = (float)envelopePhaseTime / decayTime;
 	float timeIncrease = 1.0 / (decayTime - 1);
 	float b = 1 / (expf(-steepness) - 1);
-	float amplitude;
+	float amplitude = 0;
 
 	if (samplesLeft > bufferLength) {
 		envelopePhaseTime += bufferLength - i;
@@ -413,13 +494,14 @@ unsigned int MainOscillator::applyDecay(float outputBuffer[], unsigned int i)
 		envelopePhaseTime = 0;
 	}
 	envelopeAmplitude = amplitude;
-
+	previousEnvelopePhase = DECAY;
 	return i;
 }
 
 unsigned int MainOscillator::applyRelease(float outputBuffer[], unsigned int i)
 {
 	if (previousEnvelopePhase != RELEASE) {
+        previousEnvelopeAmplitude = envelopeAmplitude;
 		envelopePhaseTime = 0;
 		previousEnvelopePhase = RELEASE;
 	}
@@ -428,13 +510,13 @@ unsigned int MainOscillator::applyRelease(float outputBuffer[], unsigned int i)
 	float relativeTime = (float)envelopePhaseTime / releaseTime;
 	float timeIncrease = 1.0 / releaseTime;
 	float b = 1 / (expf(-steepness) - 1);
-	float amplitude;
+	float amplitude = 0;
 
 	if (samplesLeft > bufferLength) {
 		envelopePhaseTime += bufferLength - i;
 		for (; i < bufferLength; i++) {
-			amplitude = sustainVolume -
-				sustainVolume * b * (expf(-steepness * relativeTime) - 1);
+			amplitude = previousEnvelopeAmplitude *
+				(1 - b * (expf(-steepness * relativeTime) - 1));
 			outputBuffer[i] *= amplitude;
 			relativeTime += timeIncrease;
 		}
@@ -442,14 +524,17 @@ unsigned int MainOscillator::applyRelease(float outputBuffer[], unsigned int i)
 	else {
 		unsigned int endI = i + samplesLeft;
 		for (; i < endI; i++) {
-			amplitude = sustainVolume -
-				sustainVolume * b * (expf(-steepness * relativeTime) - 1);
+//			amplitude = sustainVolume -	sustainVolume * b * (expf(-steepness * relativeTime) - 1);
+            amplitude = previousEnvelopeAmplitude *
+                (1 - b * (expf(-steepness * relativeTime) - 1));
 			outputBuffer[i] *= amplitude;
 			relativeTime += timeIncrease;
 		}
 		envelopePhase = OFF;
 		envelopePhaseTime = 0;
 	}
+
+    envelopeAmplitude = amplitude;
 
 	return i;
 }
@@ -468,6 +553,7 @@ void MainOscillator::applyFastMute(float outputBuffer[])
 		outputBuffer[i] = 0;
 	}
 	envelopePhase = OFF;
+	previousEnvelopePhase = OFF;
 }
 
 EnvelopePhase MainOscillator::getEnvelopePhase() const
