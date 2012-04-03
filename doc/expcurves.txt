@@ -1,0 +1,20 @@
+Exponential ADSR curves used in maucisynth
+
+Attack:
+
+s = 4
+b = 1 / (1 - e^(-s))
+f(x) = b * (1 - e^(-s * x))
+x = 0..1
+
+Decay:
+
+s = 4
+b = 1 / (1 - e^(-s))
+f(x) = 1 - (1 - sustain) * b * (1 - e^(-s * x))
+
+Release:
+
+s = 4
+b = 1 / (1 - e^(-s))
+f(x) = prevAmplitude * (1 - b * (1 - e^(-s * x))

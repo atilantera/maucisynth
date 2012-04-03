@@ -6,7 +6,26 @@ GCC: -O2 -march=athlon-xp
 
 Assembler optimization
 * manual pointer loops
-* use of MMX, SSE, SSE2 (SIMD instructions)
+
+* use of MMX, 3DNow!, SSE (SIMD instructions): 
+  + possible with mixing (adding sound of each oscillator to jack buffer,
+      dividing jack buffer with POLYPHONY)
+
+  * probably impossible with sound synthesis: while output buffer indices are
+    adjacent, wavetable indices are not! (each one is individual)
+    * maybe 4x mov from wavetable to SSE registers, then single 128-bit mov
+      from SSE registers to outputBuffer.
+      * but only if it's faster than direct mem-to-mem mov.
+
+  * possible with envelope generation if envelope curve is precalculated
+    and its values are one-to-one of sample values. Then it's possible to:
+
+    movaps  # load next four samples to xmm0..xmm3
+    movaps  # load next four envelope values to xmm4..xmm7
+    mulps   # xmm0 *= xmm4; xmm1 *= xmm5; xmm2 *= xmm6; xmm3 *= xmm7;
+    movaps  # store adjusted samples from xmm0..xmm3 to memory
+     
+  
 * use objdump to examine whether GCC can find uses for MMX/SSE/SSE2
   instructions with -O2 -march=athlon-xp
 

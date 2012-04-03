@@ -2,8 +2,6 @@ Tehtävää aika- ja riippuvuusjärjestyksessä:
 
 1. Synthesizer-luokka
 
-   
-
    Missäs vaiheessa LFO:iden taajuudet päivitetään?
    Nyt parametrinkäsittelyssä taajuus päivittyy vain osc1parameters-
    kenttiin!
@@ -17,14 +15,19 @@ Tehtävää aika- ja riippuvuusjärjestyksessä:
    Kun LFO:n taajuus riippuu pääoskillaattorin taajuudesta, niin
    pääoskillaattorin pärähtäessä soimaan se asettaa LFO:n taajuuden.
    (Pääoskillaattorissa on viittaus sille varattuun LFO:hon.)
-   
+
+2. Optimoi envelopet: eksponentiaaliset ADSR-käyrät omaan taulukkoonsa.
+   Katso paperille kirjoitettu jutska.
+
+   a) Toisen tai kolmannen asteen polynomi eksponenttikäyrän sijasta
+      ei kuulosta aidolta. Sitä paitsi 8-10 float kerto- ja yhteenlaskun
+      ajassa laskee jo itse eksponenttifunktion.
+
+   b) Voisiko attack- ja decay/release-vaiheet taulukoida esim. 1024
+      samplelle? Jos renderöitävä pituus suurempi, interpoloidaan kahden
+      arvon väliä. Mahtaisiko moinen interpolointi kuulua naksumisena?
+
 8. luokka LowpassFilter
-   
-9. Optimointia: kannattaako oskillaattorin äänisynteesi laittaa inlineksi?
-   Tietenkin se kiehtoisi, mutta ei taida onnistua, koska metodeissa on
-   paikallisia muuttujia. Muutenkaan varsinaisen oskillaattorin äänisynteesi
-   ei ole pelkästään aaltotaulukosta lukujen napsimista ja arvojen summaamista
-   miksauspuskuriin. Muista modulointi.
 
 10. Johtuuko design.txt:ssä oleva slider-jutska EventBufferin mutexeista?
    Kun puskuri on 128 samplea ja samplerate 44100, niin jackCallbackia

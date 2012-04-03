@@ -18,9 +18,13 @@
 #include "LowFrequencyOscillator.h"
 #include "SynthParameters.h"
 
+#include "tests/testing.h"
+
 #define USE_OPTIMIZATIONS 1
 
-#include "tests/testing.h"
+const unsigned int ENVELOPE_TABLE_LENGTH = 1024;
+const unsigned int MUTE_LENGTH = 16;
+const unsigned int RETRIGGER_LENGTH = 32;
 
 enum EnvelopePhase { ATTACK, DECAY, SUSTAIN, RELEASE, OFF, FAST_MUTE,
     RETRIGGER };
@@ -102,6 +106,14 @@ protected:
 	// Going directly from attack/decay to release results in audible crack.
 	float lastSample;
 
+	// Precalculated ADSR curves. These are similar to waveform tables
+	// sineTable[] and absSineTable[] in class Oscillator.
+	// releaseTable is also used for RELEASE phase.
+	static float attackTable[ENVELOPE_TABLE_LENGTH];
+	static float releaseTable[ENVELOPE_TABLE_LENGTH];
+	static float retriggerTable[RETRIGGER_LENGTH];
+	static bool envelopeTablesInitialized;
+
 	void setFrequency(float f);
 
 	void synthesizeFromWavetable(float outputBuffer[],
@@ -119,12 +131,18 @@ protected:
 	void applyAmplitudeModulation(float outputBuffer[],
 		const float modulatorBuffer[]);
 
+	static void initializeEnvelopeTables();
+
 	void applyEnvelope(float outputBuffer[]);
 
 	unsigned int applyAttack(float outputBuffer[], unsigned int i);
+	unsigned int applyAttackTable(float outputBuffer[], unsigned int i);
+
     unsigned int applyRetrigger(float outputBuffer[]);
 	unsigned int applyDecay(float outputBuffer[], unsigned int i);
 	unsigned int applyRelease(float outputBuffer[], unsigned int i);
+
+
 
 	void applyFastMute(float outputBuffer[]);
 
