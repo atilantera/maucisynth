@@ -15,6 +15,6 @@
 //#define GUI_TESTING
 
 // Defining this makes class Synthesizer print debug messages
-#define SYNTH_TESTING
+//#define SYNTH_TESTING
 
 #endif /* TESTING_H_ */

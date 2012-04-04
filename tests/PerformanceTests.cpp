@@ -164,12 +164,6 @@ void PerformanceTests::tableVsSinTest()
     while (ptr < endPtr) {
         *ptr++ = sourceTable[(int)angle];
         angle += angleIncrease;
-        *ptr++ = sourceTable[(int)angle];
-        angle += angleIncrease;
-        *ptr++ = sourceTable[(int)angle];
-        angle += angleIncrease;
-        *ptr++ = sourceTable[(int)angle];
-        angle += angleIncrease;
         if (angle >= tableLength) {
             angle -= tableLength;
         }
@@ -180,12 +174,6 @@ void PerformanceTests::tableVsSinTest()
     ptr = destTable;
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &beginTime);
     while (ptr < endPtr) {
-        *ptr++ = sinf(angle);
-        angle += angleIncrease;
-        *ptr++ = sinf(angle);
-        angle += angleIncrease;
-        *ptr++ = sinf(angle);
-        angle += angleIncrease;
         *ptr++ = sinf(angle);
         angle += angleIncrease;
     }

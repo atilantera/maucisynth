@@ -3,9 +3,10 @@ Tehtävää aika- ja riippuvuusjärjestyksessä:
 1. Synthesizer-luokka
 
    Optimoi MainOscillator::applyAttack().
-     * vieläkö pointtereita taulukkoindeksien sijaan?
 
    Sovella optimointia myös Decayhyn ja Releaseen.
+   Kuin myös ehkä sawtoothiin, pulseen ja triangleen.
+   Trianglessakin voisi olla vain kaksi vaihetta nykyisen kolmen sijaan.
 
    Missäs vaiheessa LFO:iden taajuudet päivitetään?
    Nyt parametrinkäsittelyssä taajuus päivittyy vain osc1parameters-
@@ -21,18 +22,11 @@ Tehtävää aika- ja riippuvuusjärjestyksessä:
    pääoskillaattorin pärähtäessä soimaan se asettaa LFO:n taajuuden.
    (Pääoskillaattorissa on viittaus sille varattuun LFO:hon.)
 
-2. Optimoi envelopet: eksponentiaaliset ADSR-käyrät omaan taulukkoonsa.
-   Katso paperille kirjoitettu jutska.
+2. luokka LowpassFilter
 
-   a) Toisen tai kolmannen asteen polynomi eksponenttikäyrän sijasta
-      ei kuulosta aidolta. Sitä paitsi 8-10 float kerto- ja yhteenlaskun
-      ajassa laskee jo itse eksponenttifunktion.
-
-   b) Voisiko attack- ja decay/release-vaiheet taulukoida esim. 1024
-      samplelle? Jos renderöitävä pituus suurempi, interpoloidaan kahden
-      arvon väliä. Mahtaisiko moinen interpolointi kuulua naksumisena?
-
-8. luokka LowpassFilter
+3. Mitä tehdä, kun tulee note on, ja kaikki oskillaattorit ovat varattu?
+   Jos ruvetaan korvaamaan vanhoja nuotteja uusilla, niin MIDIn note
+   offit voivat mennä sekaisin, jos niistä ei pidä kirjaa.
 
 10. Johtuuko design.txt:ssä oleva slider-jutska EventBufferin mutexeista?
    Kun puskuri on 128 samplea ja samplerate 44100, niin jackCallbackia

@@ -368,7 +368,6 @@ const float modulatorBuffer[])
 void MainOscillator::applyEnvelope(float outputBuffer[])
 {
 	unsigned int i = 0;
-    float c;
 
     while (i < bufferLength) {
 		switch (envelopePhase) {
@@ -382,11 +381,7 @@ void MainOscillator::applyEnvelope(float outputBuffer[])
 			break;
 
 		case SUSTAIN:
-            c = sustainVolume;
-			for (; i < bufferLength; i++) {
-				outputBuffer[i] *= c;
-			}
-            envelopeAmplitude = c;
+			i = applySustain(outputBuffer, i);
 			break;
 
 		case RELEASE:
@@ -418,84 +413,66 @@ void MainOscillator::applyEnvelope(float outputBuffer[])
 // Returns index of next sample to be processed in outputBuffer.
 unsigned int MainOscillator::applyAttack(float outputBuffer[], unsigned int i)
 {
-	unsigned int samplesLeft = attackTime - envelopePhaseTime;
+#if USE_OPTIMIZATIONS
+	// Optimized version.
+	// See doc/expcurves.txt for explanation of the optimization.
+	unsigned int samplesLeftInPhase = attackTime - envelopePhaseTime;
+	unsigned int samplesLeftInBuffer = bufferLength - i;
 	float t = -STEEPNESS * envelopePhaseTime / attackTime;
 	float tIncrease = -STEEPNESS / (attackTime - 1);
-	float k = 1 / (1 - expf(-STEEPNESS));
+	float b = 1 / (1 - expf(-STEEPNESS));
 
-	if (samplesLeft > bufferLength) {
-		envelopePhaseTime += bufferLength - i;
+	if (samplesLeftInPhase > bufferLength - i) {
 		for (; i < bufferLength; i++) {
-			outputBuffer[i] *= k * (1 - expf(t));
+			outputBuffer[i] *= b * (1 - expf(t));
 			t += tIncrease;
 		}
+		envelopePhaseTime += samplesLeftInBuffer;
 	}
 	else {
-		unsigned int endI = i + samplesLeft;
+		unsigned int endI = i + samplesLeftInPhase;
 		for (; i < endI; i++) {
-			outputBuffer[i] *= k * (1 - expf(t));
+			outputBuffer[i] *= b * (1 - expf(t));
 			t += tIncrease;
 		}
 		envelopePhase = DECAY;
 		envelopePhaseTime = 0;
 	}
-	envelopeAmplitude = k * (1 - expf(t - tIncrease));
+	envelopeAmplitude = b * (1 - expf(t - tIncrease));
 	previousEnvelopePhase = ATTACK;
-
-// Optimized version
-//	if (samplesLeft > bufferLength) {
-//		envelopePhaseTime += bufferLength - i;
-//		for (; i < bufferLength; i++) {
-//			amplitude = k * (1 - expf(t));
-//			outputBuffer[i] *= amplitude;
-//			t += tIncrease;
-//		}
-//
-//	}
-//	else {
-//		unsigned int endI = i + samplesLeft;
-//		for (; i < endI; i++) {
-//			amplitude = k * (1 - expf(t));
-//			outputBuffer[i] *= amplitude;
-//			t += tIncrease;
-//		}
-//		envelopePhase = DECAY;
-//		envelopePhaseTime = 0;
-//	}
-//	envelopeAmplitude = amplitude;
-//	previousEnvelopePhase = ATTACK;
-
-
-//  // Original version
-//	unsigned int samplesLeft = attackTime - envelopePhaseTime;
-//	float relativeTime = (float)envelopePhaseTime / attackTime;
-//	float timeIncrease = 1.0 / (attackTime - 1);
-//	float b = 1 / (1 - expf(-STEEPNESS));
-//	float amplitude = 0;
-//
-//	if (samplesLeft > bufferLength) {
-//		envelopePhaseTime += bufferLength - i;
-//		for (; i < bufferLength; i++) {
-//			amplitude = b * (1 - expf(-STEEPNESS * relativeTime));
-//			outputBuffer[i] *= amplitude;
-//			relativeTime += timeIncrease;
-//		}
-//
-//	}
-//	else {
-//		unsigned int endI = i + samplesLeft;
-//		for (; i < endI; i++) {
-//			amplitude = b * (1 - expf(-STEEPNESS * relativeTime));
-//			outputBuffer[i] *= amplitude;
-//			relativeTime += timeIncrease;
-//		}
-//		envelopePhase = DECAY;
-//		envelopePhaseTime = 0;
-//	}
-//	envelopeAmplitude = amplitude;
-//	previousEnvelopePhase = ATTACK;
-
 	return i;
+
+#else
+	// Original version
+	unsigned int samplesLeft = attackTime - envelopePhaseTime;
+	float relativeTime = (float)envelopePhaseTime / attackTime;
+	float timeIncrease = 1.0 / (attackTime - 1);
+	float b = 1 / (1 - expf(-STEEPNESS));
+	float amplitude = 0;
+
+	if (samplesLeft > bufferLength) {
+		envelopePhaseTime += bufferLength - i;
+		for (; i < bufferLength; i++) {
+			amplitude = b * (1 - expf(-STEEPNESS * relativeTime));
+			outputBuffer[i] *= amplitude;
+			relativeTime += timeIncrease;
+		}
+
+	}
+	else {
+		unsigned int endI = i + samplesLeft;
+		for (; i < endI; i++) {
+			amplitude = b * (1 - expf(-STEEPNESS * relativeTime));
+			outputBuffer[i] *= amplitude;
+			relativeTime += timeIncrease;
+		}
+		envelopePhase = DECAY;
+		envelopePhaseTime = 0;
+	}
+	envelopeAmplitude = amplitude;
+	previousEnvelopePhase = ATTACK;
+	return i;
+#endif // USE_OPTIMIZATIONS
 }
 
 // Retriggers the note in means of envelope curve. The retrigger curve is
@@ -510,6 +487,7 @@ unsigned int MainOscillator::applyRetrigger(float outputBuffer[])
 	float angleIncrease = M_PI / RETRIGGER_LENGTH;
 	for (i = 0; i < RETRIGGER_LENGTH; i++) {
 		outputBuffer[i] *= envelopeAmplitude * (0.5 * sinf(angle) + 0.5);
+		//outputBuffer[i] = 0.5;
 		angle += angleIncrease;
 	}
 	envelopePhase = ATTACK;
@@ -526,6 +504,39 @@ unsigned int MainOscillator::applyRetrigger(float outputBuffer[])
 // Returns index of next sample to be processed in outputBuffer.
 unsigned int MainOscillator::applyDecay(float outputBuffer[], unsigned int i)
 {
+#if USE_OPTIMIZATIONS
+	unsigned int samplesLeftInPhase = decayTime - envelopePhaseTime;
+	unsigned int samplesLeftInBuffer = bufferLength - i;
+
+	// See doc/expcurves.txt for explanation of the optimizations.
+	float t = -STEEPNESS * envelopePhaseTime / decayTime;
+	float tIncrease = -STEEPNESS / (decayTime - 1);
+	float c = (1 - this->sustainVolume) / (1 - expf(-STEEPNESS));
+	float d = 1 - c;
+
+	if (samplesLeftInPhase > samplesLeftInBuffer) {
+		for (; i < bufferLength; i++) {
+			outputBuffer[i] *= d + c * expf(t);
+			t += tIncrease;
+		}
+		envelopePhaseTime += samplesLeftInBuffer;
+	}
+	else {
+		unsigned int endI = i + samplesLeftInPhase;
+		for (; i < endI; i++) {
+			outputBuffer[i] *= d + c * expf(t);
+			t += tIncrease;
+		}
+		envelopePhase = SUSTAIN;
+		previousEnvelopePhase = ATTACK;
+		envelopePhaseTime = 0;
+	}
+	envelopeAmplitude = d + c * expf(t - tIncrease);
+	previousEnvelopePhase = DECAY;
+	return i;
+
+#else
+	// Original version
 	unsigned int samplesLeft = decayTime - envelopePhaseTime;
 	float relativeTime = (float)envelopePhaseTime / decayTime;
 	float timeIncrease = 1.0 / (decayTime - 1);
@@ -557,6 +568,20 @@ unsigned int MainOscillator::applyDecay(float outputBuffer[], unsigned int i)
 	envelopeAmplitude = amplitude;
 	previousEnvelopePhase = DECAY;
 	return i;
+#endif // USE_OPTIMIZATIONS
+}
+
+// Applies envelope phase SUSTAIN to samples of outputBuffer.
+// i = index of first sample in outputBuffer where the DECAY curve is
+//     applied to.
+// Returns index of next sample to be processed in outputBuffer.
+unsigned int MainOscillator::applySustain(float outputBuffer[], unsigned int i)
+{
+	for (; i < bufferLength; i++) {
+		outputBuffer[i] *= sustainVolume;
+	}
+    envelopeAmplitude = sustainVolume;
+    return i;
 }
 
 // Applies envelope phase RELEASE to samples of outputBuffer.
@@ -565,6 +590,42 @@ unsigned int MainOscillator::applyDecay(float outputBuffer[], unsigned int i)
 // Returns index of next sample to be processed in outputBuffer.
 unsigned int MainOscillator::applyRelease(float outputBuffer[], unsigned int i)
 {
+	if (previousEnvelopePhase != RELEASE) {
+        previousEnvelopeAmplitude = envelopeAmplitude;
+		envelopePhaseTime = 0;
+		previousEnvelopePhase = RELEASE;
+	}
+
+#if USE_OPTIMIZATIONS
+	unsigned int samplesLeftInPhase = releaseTime - envelopePhaseTime;
+	unsigned int samplesLeftInBuffer = bufferLength - i;
+	float t = -STEEPNESS * envelopePhaseTime / releaseTime;
+	float tIncrease = -STEEPNESS / (releaseTime - 1);
+	float b = 1 / (1 - expf(-STEEPNESS));
+	float c = (1 - b) * previousEnvelopeAmplitude;
+	float d = b * previousEnvelopeAmplitude;
+
+	if (samplesLeftInPhase > samplesLeftInBuffer) {
+		envelopePhaseTime += samplesLeftInBuffer;
+		for (; i < bufferLength; i++) {
+			outputBuffer[i] *= c + d * expf(t);
+			t += tIncrease;
+		}
+	}
+	else {
+		unsigned int endI = i + samplesLeftInPhase;
+		for (; i < endI; i++) {
+			outputBuffer[i] *= c + d * expf(t);
+			t += tIncrease;
+		}
+		envelopePhase = OFF;
+		envelopePhaseTime = 0;
+	}
+    envelopeAmplitude = c + d * expf(t - tIncrease);
+	return i;
+
+#else
+	// Original version
 	if (previousEnvelopePhase != RELEASE) {
         previousEnvelopeAmplitude = envelopeAmplitude;
 		envelopePhaseTime = 0;
@@ -599,8 +660,8 @@ unsigned int MainOscillator::applyRelease(float outputBuffer[], unsigned int i)
 	}
 
     envelopeAmplitude = amplitude;
-
 	return i;
+#endif // USE_OPTIMIZATIONS
 }
 
 // Does a "fast mute": does an interpolation from last sample value to zero
@@ -617,9 +678,8 @@ void MainOscillator::applyFastMute(float outputBuffer[])
 	for (i = 0; i < turnOffLength; i++) {
 		outputBuffer[i] = (turnOffLength - i) * lastSample / turnOffLength;
 	}
-	for (; i < bufferLength; i++) {
-		outputBuffer[i] = 0;
-	}
+	memset(outputBuffer + turnOffLength, 0,
+			(bufferLength - turnOffLength) * sizeof(float));
 	envelopePhase = OFF;
 	previousEnvelopePhase = OFF;
 }

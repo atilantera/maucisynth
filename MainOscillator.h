@@ -14,6 +14,7 @@
 #ifndef MAINOSCILLATOR_H_
 #define MAINOSCILLATOR_H_
 
+#include <cstring>
 #include "Oscillator.h"
 #include "LowFrequencyOscillator.h"
 #include "SynthParameters.h"
@@ -130,6 +131,7 @@ protected:
 	unsigned int applyAttack(float outputBuffer[], unsigned int i);
     unsigned int applyRetrigger(float outputBuffer[]);
 	unsigned int applyDecay(float outputBuffer[], unsigned int i);
+	unsigned int applySustain(float outputBuffer[], unsigned int i);
 	unsigned int applyRelease(float outputBuffer[], unsigned int i);
 	void applyFastMute(float outputBuffer[]);
 };
