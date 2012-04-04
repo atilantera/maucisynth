@@ -2,8 +2,6 @@ Tehtävää aika- ja riippuvuusjärjestyksessä:
 
 1. Synthesizer-luokka
 
-   Optimoi MainOscillator::applyAttack().
-
    Sovella optimointia myös Decayhyn ja Releaseen.
    Kuin myös ehkä sawtoothiin, pulseen ja triangleen.
    Trianglessakin voisi olla vain kaksi vaihetta nykyisen kolmen sijaan.
@@ -28,52 +26,11 @@ Tehtävää aika- ja riippuvuusjärjestyksessä:
    Jos ruvetaan korvaamaan vanhoja nuotteja uusilla, niin MIDIn note
    offit voivat mennä sekaisin, jos niistä ei pidä kirjaa.
 
-10. Johtuuko design.txt:ssä oleva slider-jutska EventBufferin mutexeista?
-   Kun puskuri on 128 samplea ja samplerate 44100, niin jackCallbackia
-   kutsutaan 130 kertaa sekunnissa. Joka kerran EventBufferin mutexi päälle
-   ja mutexi pois. Lisäksi liukusäätimen hinkkaaminen aiheuttaa kymmeniä
-   funktiokutsuja sekunnissa SynthGui-luokan callbackeihin. Jokainen
-   niistä kutsuu EventBufferia, ja niissäkin kaikissa aina mutexi päälle
-   ja mutexi pois.
-       Parempi ratkaisu olisi, että GUI-callbackit vain päivittävät jotain
-   float-arvoja SynthGui-luokassa. Sitten esim. kerran 1/10 tai 1/20 sekunnissa
-   Synthesizer käy päivittämässä itselleen muuttuneet arvot GUIlta.
-   Näppäinten painallukset ja vapautukset joutuu silti tallentamaan
-   EventBufferiin. Tai sitten joka puskurillisella voi olla tasan yksi
-   näppäimen painallus ja näppäimen vapautus.
-       Kaikkein parasta tietenkin olisi, että GUIn arvot päivittyisivät
-   suoraan Synthesizerin parametreihin. Sen voi tehdä GUIn ja Synthesizerin
-   jakamalla sellaisella SynthParameters-oliolla, jossa on kaikki synan
-   parametrit: kaikki oskillaattorit jne. Ei olis paha. Synthesizer lukee
-   kerrallaan tasan yhden, muista arvoista riippumattoman arvon
-   (osc1attack, lfo1relativeFrequency, osc1modulationType - kaikki lopulta
-   int- tai float-arvoja), joten mutexeja ei tarvita. Tällöin käytännössä
-   SynthGui saa kirjoitella arvoja vapaasti uusiksi. Sitten, kun Synthesizerin
-   on aika generoida seuraava äänipuskuri, niin kaikki soivat oskillaattorit
-   (sekä MainOscillatorit että LFO:t) päivittävät tarvitsemansa arvot
-   SynthParameters-oliosta.
-       Mutexittomassa ratkaisussa ainoa ongelma on se, että jos JACKin
-   puskurikoko on valtava, esim. 4096, niin 44100 Hz sampleratella
-   Synthesizer päivittää arvoja vain kerran kymmenesosasekunnissa. Jos
-   GUI:n kontrolleja silloin räplää tosi nopeasti ja sitten lopettaa
-   räpläämisen, niin jokin nappi saattaa jäädä väärään asentoon, ts. GUIn
-   viimeisin arvo ei päivity Synthesizeriin. Näin käy nimenomaan silloin,
-   jos SynthParametersissa on jotain boolean-arvoja kuittausta varten:
-   1. Säie 1: Synthesizer lukee arvon.
-   2. Säie 2: GUI kirjoittaa arvon.
-   3. Säie 2: GUI laittaa kuittauksen trueksi.
-   4. Säie 1: Synthesizer laittaa kuittauksen falseksi.
-       Mutexittoman ratkaisun toinen ongelma on synan soittaminen tietokone-
-   näppäimistöltä. Synthparametersissa pitäisi olla bool-arvot jokaiselle
-   128 MIDI-koskettimelle. Synthesizerin pitäisi joka puskurillisella käydä
-   koko 128 arvon bool-taulukko (kosketin painettu/vapaana) läpi ja katsoa,
-   mitkä koskettimet ovat äskettäin muuttuneet. Tietysti jos 128 kosketinta
-   pakkaa biteittäin, niin 32 bitin unsigned inttejä tarvitaan neljä.
-   Tai 8 bitin unsigned chareja tarvitaan 16. Tutkitaan, mitkä charit ovat
-   muuttuneet, puretaan bitit chareista ja tarkistetaan jokaisesta muuttuneesta
-   charista kaikki 8 kosketinta. Äh, tämäkin ratkaisu menee jo aika
-   hakkeroinniksi, vaikka bitti-andit ja vertailut ovatkin nopeita.
-   
+4. Lisää main volume -säädin GUIhin. Kohde: SynthParameters.mainVolume.
+
+5. Lisää MIDI-tuki
+5.1 Tarkista, että MainOscillatorin envelope-jutskissa on huomioitu
+    nuotin velocity   
    
 
 

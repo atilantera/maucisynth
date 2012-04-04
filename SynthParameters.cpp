@@ -22,4 +22,9 @@ OscillatorParameters::OscillatorParameters()
 	lfoRelativeFrequency = MinRelativeLfoFrequency;
 }
 
+SynthParameters::SynthParameters()
+{
+	lowpassFrequency = MinLowpassFrequency;
+	mainVolume = 1;
+}
 

@@ -10,7 +10,8 @@
 Synthesizer * Synthesizer::synthInstance = NULL;
 bool Synthesizer::callbackAlreadyRunning = false;
 
-Synthesizer::Synthesizer(EventBuffer & b, SynthGui & g): events(b), gui(g)
+Synthesizer::Synthesizer(EventBuffer & b, SynthParameters & p):
+	events(b), parameters(p), filter(p.lowpassFrequency)
 {
 	unsigned int i;
 
@@ -26,8 +27,6 @@ Synthesizer::Synthesizer(EventBuffer & b, SynthGui & g): events(b), gui(g)
 	oscillatorBuffer = NULL;
 	lfoBuffer = NULL;
 
-	mainVolume = 1;
-
 	initJack();
 	Oscillator::setSamplerate(samplerate);
 	Oscillator::setBufferLength(bufferLength);
@@ -35,13 +34,9 @@ Synthesizer::Synthesizer(EventBuffer & b, SynthGui & g): events(b), gui(g)
 	oscillatorBuffer = new float[bufferLength];
 	lfoBuffer = new float[bufferLength];
 
-	lfo1frequencyType = FIXED;
-
-	filter.setFrequency(MinLowpassFrequency);
-
 	for (i = 0; i < POLYPHONY; i++) {
-		oscillator1[i] = new MainOscillator(osc1parameters);
-		lfo1[i] = new LowFrequencyOscillator(osc1parameters);
+		oscillator1[i] = new MainOscillator(parameters.osc1);
+		lfo1[i] = new LowFrequencyOscillator(parameters.osc1);
 	}
 
 	if (lfo1[POLYPHONY - 1] == NULL) {
@@ -174,13 +169,13 @@ void Synthesizer::generateSound(jack_nframes_t nframes)
 	// Oscillator group 1
 	bool useGlobalLfo = false;
 	bool useDedicatedLfo = false;
-	if (osc1parameters.lfoModulationTarget == FREQUENCY ||
-		osc1parameters.lfoModulationTarget == PULSE_WIDTH)
+	if (parameters.osc1.lfoModulationTarget == FREQUENCY ||
+		parameters.osc1.lfoModulationTarget == PULSE_WIDTH)
 	{
 		useGlobalLfo = true;
 	}
-	if (osc1parameters.lfoModulationTarget == AMPLITUDE) {
-		if (osc1parameters.lfoFrequencyType == RELATIVE) {
+	if (parameters.osc1.lfoModulationTarget == AMPLITUDE) {
+		if (parameters.osc1.lfoFrequencyType == RELATIVE) {
 			useDedicatedLfo = true;
 		}
 		else {
@@ -193,7 +188,7 @@ void Synthesizer::generateSound(jack_nframes_t nframes)
 	}
 
 	// TODO: remove this line when ready for LFO testing
-	osc1parameters.lfoModulationTarget = NONE;
+	parameters.osc1.lfoModulationTarget = NONE;
 
 	unsigned int oscNum, i;
 	bool noteFinished;
@@ -214,9 +209,7 @@ void Synthesizer::generateSound(jack_nframes_t nframes)
 	printOscillatorPhases();
 #endif // SYNTH_TESTING
 
-
-
-	float mixingCoefficent = mainVolume / POLYPHONY;
+	float mixingCoefficent = parameters.mainVolume / POLYPHONY;
 	for (i = 0; i < nframes; i++) {
 		outputBuffer[i] *= mixingCoefficent;
 	}
@@ -359,51 +352,51 @@ void Synthesizer::processParameterChange(unsigned int parameter,
 		switch (parameter) {
 
 		case OSC1_WAVEFORM: // 0
-			osc1parameters.waveform = (WaveformType)parameterValue;
+			parameters.osc1.waveform = (WaveformType)parameterValue;
 			break;
 
 		case OSC1_ATTACK:   // 1
-			osc1parameters.attackTime = parameterValue;
+			parameters.osc1.attackTime = parameterValue;
 			break;
 
 		case OSC1_DECAY:    // 2
-			osc1parameters.decayTime = parameterValue;
+			parameters.osc1.decayTime = parameterValue;
 			break;
 
 		case OSC1_SUSTAIN:  // 3
-			osc1parameters.sustainVolume = parameterValue * 0.01;
+			parameters.osc1.sustainVolume = parameterValue * 0.01;
 			break;
 
 		case OSC1_RELEASE:  // 4
-			osc1parameters.releaseTime = parameterValue;
+			parameters.osc1.releaseTime = parameterValue;
 			break;
 		}
 	}
 	else {
 		switch (parameter) {
 		case LFO1_FREQUENCY_TYPE:     // 5
-			osc1parameters.lfoFrequencyType = (LfoFrequencyType)parameterValue;
+			parameters.osc1.lfoFrequencyType = (LfoFrequencyType)parameterValue;
 			break;
 
 		case LFO1_FIXED_FREQUENCY:    // 6
-			osc1parameters.lfoFixedFrequency = parameterValue * 0.01;
+			parameters.osc1.lfoFixedFrequency = parameterValue * 0.01;
 			break;
 
 		case LFO1_RELATIVE_FREQUENCY: // 7
-			osc1parameters.lfoRelativeFrequency = parameterValue * 0.01;
+			parameters.osc1.lfoRelativeFrequency = parameterValue * 0.01;
 			break;
 
 		case LFO1_TARGET_TYPE:        // 8
-			osc1parameters.lfoModulationTarget =
+			parameters.osc1.lfoModulationTarget =
 				(LfoModulationTarget) parameterValue;
 			break;
 
 		case LFO1_MODULATION_AMOUNT:  // 9
-			osc1parameters.lfoModulationAmount = parameterValue * 0.01;
+			parameters.osc1.lfoModulationAmount = parameterValue * 0.01;
 			break;
 
 		case FILTER_LOWPASS:          // 20
-			filter.setFrequency(parameterValue);
+			parameters.lowpassFrequency =  parameterValue;
 			break;
 		}
 	}

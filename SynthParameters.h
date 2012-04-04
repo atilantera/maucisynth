@@ -109,5 +109,17 @@ public:
 	float lfoRelativeFrequency;
 };
 
+// Class SynthParameters contains all parameters of the synthesizer.
+
+class SynthParameters {
+public:
+	SynthParameters();
+
+	OscillatorParameters osc1;
+	float lowpassFrequency;
+
+	// Master volume of the synthesizer output
+	float mainVolume;
+};
 
 #endif /* SYNTHPARAMETERS_H_ */

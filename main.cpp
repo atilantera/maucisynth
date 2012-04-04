@@ -7,8 +7,10 @@ int main(int argc, char ** argv)
 	gtk_init(&argc, &argv);
 
 	EventBuffer eventBuffer;
-	SynthGui gui(eventBuffer);
-	Synthesizer synth(eventBuffer, gui);
+	SynthParameters parameters;
+
+	Synthesizer synth(eventBuffer, parameters);
+	SynthGui gui(eventBuffer, parameters);
 
 	if (synth.isActive()) {
 		gtk_main();

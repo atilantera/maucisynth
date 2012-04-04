@@ -7,16 +7,9 @@
 
 #include "LowpassFilter.h"
 
-LowpassFilter::LowpassFilter() {
-	frequency = 1;
-
-}
+LowpassFilter::LowpassFilter(float & frequency): frequency_(frequency)
+{ }
 
 LowpassFilter::~LowpassFilter() {
 
-}
-
-void LowpassFilter::setFrequency(float f)
-{
-	frequency = f;
 }

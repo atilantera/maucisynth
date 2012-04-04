@@ -9,8 +9,10 @@
 
 SynthGui * SynthGui::guiInstance;
 
-SynthGui::SynthGui(EventBuffer & eventBuffer) :
-	synthEvents(eventBuffer) {
+SynthGui::SynthGui(EventBuffer & eventBuffer,
+	SynthParameters & synthParameters) :
+	synthEvents(eventBuffer), parameters(synthParameters)
+{
 
 	keyboardMutex = PTHREAD_MUTEX_INITIALIZER;
 	guiInstance = this;
@@ -254,7 +256,7 @@ void SynthGui::createOscillator1Controls() {
 	slider = gtk_vscale_new_with_range(MinAttackTime, MaxAttackTime, 5);
 	gtk_widget_set_size_request(GTK_WIDGET(slider), 32, 128);
 	gtk_range_set_inverted(GTK_RANGE(slider), TRUE);
-	gtk_range_set_update_policy(GTK_RANGE(slider), GTK_UPDATE_CONTINUOUS);
+	gtk_range_set_update_policy(GTK_RANGE(slider), GTK_UPDATE_DELAYED);
 	g_signal_connect(slider, "value_changed",
 		G_CALLBACK(SynthGui::sliderChangeCallback),
 		(gpointer)"osc1attack");
@@ -263,7 +265,7 @@ void SynthGui::createOscillator1Controls() {
 	slider = gtk_vscale_new_with_range(MinDecayTime, MaxDecayTime, 5);
 	gtk_widget_set_size_request(GTK_WIDGET(slider), 32, 128);
 	gtk_range_set_inverted(GTK_RANGE(slider), TRUE);
-	gtk_range_set_update_policy(GTK_RANGE(slider), GTK_UPDATE_CONTINUOUS);
+	gtk_range_set_update_policy(GTK_RANGE(slider), GTK_UPDATE_DELAYED);
 	g_signal_connect(slider, "value_changed",
 		G_CALLBACK(SynthGui::sliderChangeCallback),
 		(gpointer)"osc1decay");
@@ -273,7 +275,7 @@ void SynthGui::createOscillator1Controls() {
 	gtk_widget_set_size_request(GTK_WIDGET(slider), 32, 128);
 	gtk_range_set_inverted(GTK_RANGE(slider), TRUE);
 	gtk_range_set_value(GTK_RANGE(slider), 100);
-	gtk_range_set_update_policy(GTK_RANGE(slider), GTK_UPDATE_CONTINUOUS);
+	gtk_range_set_update_policy(GTK_RANGE(slider), GTK_UPDATE_DELAYED);
 	g_signal_connect(slider, "value_changed",
 		G_CALLBACK(SynthGui::sliderChangeCallback),
 		(gpointer)"osc1sustain");
@@ -282,7 +284,7 @@ void SynthGui::createOscillator1Controls() {
 	slider = gtk_vscale_new_with_range(MinReleaseTime, MaxReleaseTime, 30);
 	gtk_widget_set_size_request(GTK_WIDGET(slider), 32, 128);
 	gtk_range_set_inverted(GTK_RANGE(slider), TRUE);
-	gtk_range_set_update_policy(GTK_RANGE(slider), GTK_UPDATE_CONTINUOUS);
+	gtk_range_set_update_policy(GTK_RANGE(slider), GTK_UPDATE_DELAYED);
 	g_signal_connect(slider, "value_changed",
 		G_CALLBACK(SynthGui::sliderChangeCallback),
 		(gpointer)"osc1release");
@@ -395,55 +397,57 @@ void SynthGui::sliderChange(GtkAdjustment * adj, gpointer data) {
 	float value = ((GtkRange *) adj)->adjustment->value;
 	char * name = (char *)data;
 
-	unsigned char type = 255;
-	unsigned short intValue = 0;
-
+	// Message strings:
 	// lfo1fixed
 	// lfo1relative
 	// lfo1modulationAmount
 	// lowpassFilterFrequency
 	if (name[0] == 'l') {
 		if (name[3] == '1') {
-			intValue = value * 100;
 			if (name[4] == 'f') {
-				type = LFO1_FIXED_FREQUENCY;
+				parameters.osc1.lfoFixedFrequency = value;
+				return;
 			}
 			if (name[4] == 'r') {
-				type = LFO1_RELATIVE_FREQUENCY;
+				parameters.osc1.lfoRelativeFrequency = value;
+				return;
 			}
 			if (name[4] == 'm') {
-				type = LFO1_MODULATION_AMOUNT;
+				parameters.osc1.lfoModulationAmount = value;
+				return;
 			}
 		}
 		if (name[1] == 'o') {
-			type = FILTER_LOWPASS;
-			intValue = value;
+			parameters.lowpassFrequency = value;
+			return;
 		}
 	}
 
+	// Message strings:
 	// osc1attack
 	// osc1decay
 	// osc1sustain
 	// osc1release
 	if (name[0] == 'o') {
 		if (name[3] == '1') {
-			intValue = value;
 			if (name[4] == 'a') {
-				type = OSC1_ATTACK;
+				parameters.osc1.attackTime = value;
+				return;
 			}
 			if (name[4] == 'd') {
-				type = OSC1_DECAY;
+				parameters.osc1.decayTime = value;
+				return;
 			}
 			if (name[4] == 's') {
-				type = OSC1_SUSTAIN;
+				parameters.osc1.sustainVolume = 0.01 * value;
+				return;
 			}
 			if (name[4] == 'r') {
-				type = OSC1_RELEASE;
+				parameters.osc1.releaseTime = value;
+				return;
 			}
 		}
 	}
-
-	synthEvents.addParameterChange(type, intValue);
 }
 
 void SynthGui::buttonSelect(GtkWidget * widget, gpointer data) {
@@ -453,9 +457,7 @@ void SynthGui::buttonSelect(GtkWidget * widget, gpointer data) {
 	}
 	char * name = (char *) data;
 
-	unsigned char type = 255;
-	unsigned short value = 0;
-
+	// Message strings:
 	// lfo1fixed
 	// lfo1relative
 	// lfo1targetAmplitude
@@ -465,31 +467,35 @@ void SynthGui::buttonSelect(GtkWidget * widget, gpointer data) {
 	if (name[0] == 'l') {
 		if (name[3] == '1') {
 			if (name[4] == 'f') {
-				type = LFO1_FREQUENCY_TYPE;
-				value = FIXED;
+				parameters.osc1.lfoFrequencyType = FIXED;
+				return;
 			}
 			if (name[4] == 'r') {
-				type = LFO1_FREQUENCY_TYPE;
-				value = RELATIVE;
+				parameters.osc1.lfoFrequencyType = RELATIVE;
+				return;
 			}
 			if (name[4] == 't') {
-				type = LFO1_TARGET_TYPE;
 				if (name[10] == 'A') {
-					value = AMPLITUDE;
+					parameters.osc1.lfoModulationTarget = AMPLITUDE;
+					return;
 				}
 				if (name[10] == 'F') {
-					value = FREQUENCY;
+					parameters.osc1.lfoModulationTarget = FREQUENCY;
+					return;
 				}
 				if (name[10] == 'N') {
-					value = NONE;
+					parameters.osc1.lfoModulationTarget = NONE;
+					return;
 				}
 				if (name[10] == 'P') {
-					value = PULSE_WIDTH;
+					parameters.osc1.lfoModulationTarget = PULSE_WIDTH;
+					return;
 				}
 			}
 		}
 	}
 
+	// Message strings:
 	// osc1abssine
 	// osc1pulse
 	// osc1sawtooth
@@ -497,28 +503,30 @@ void SynthGui::buttonSelect(GtkWidget * widget, gpointer data) {
 	// osc1triangle
 	if (name[0] == 'o') {
 		if (name[3] == '1') {
-			type = OSC1_WAVEFORM;
 			if (name[4] == 'a') {
-				value = ABS_SINE;
+				parameters.osc1.waveform = ABS_SINE;
+				return;
 			}
 			if (name[4] == 'p') {
-				value = PULSE;
+				parameters.osc1.waveform = PULSE;
+				return;
 			}
 			if (name[4] == 's') {
 				if (name[5] == 'a') {
-					value = SAWTOOTH;
+					parameters.osc1.waveform = SAWTOOTH;
+					return;
 				}
 				if (name[5] == 'i') {
-					value = SINE;
+					parameters.osc1.waveform = SINE;
+					return;
 				}
 			}
 			if (name[4] == 't') {
-				value = TRIANGLE;
+				parameters.osc1.waveform = TRIANGLE;
+				return;
 			}
 		}
 	}
-
-	synthEvents.addParameterChange(type, value);
 }
 
 // Generates SynthGui.keyTranslations[] for method keyvalToIndex()

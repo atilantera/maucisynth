@@ -29,7 +29,7 @@ const int BASE_OCTAVE_MIN = 0;
 
 class SynthGui {
 public:
-	SynthGui(EventBuffer & eventBuffer);
+	SynthGui(EventBuffer & eventBuffer, SynthParameters & parameters);
 	~SynthGui();
 
 private:
@@ -70,6 +70,7 @@ private:
 	bool keyIsPressed[NUM_KEYS];
 	int baseOctave;
 	EventBuffer & synthEvents;
+	SynthParameters & parameters;
 
 	GtkWidget * mainWindow;
 	GtkWidget * mainFixed;

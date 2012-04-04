@@ -10,12 +10,11 @@
 
 class LowpassFilter {
 public:
-	LowpassFilter();
-	void setFrequency(float f);
+	LowpassFilter(float & frequency);
 	virtual ~LowpassFilter();
 
 private:
-	float frequency;
+	float & frequency_;
 };
 
 #endif /* LOWPASSFILTER_H_ */

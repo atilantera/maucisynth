@@ -26,7 +26,7 @@ const unsigned int POLYPHONY = 8;
 
 class Synthesizer {
 public:
-	Synthesizer(EventBuffer & b, SynthGui & g);
+	Synthesizer(EventBuffer & b, SynthParameters & p);
 	~Synthesizer();
 
 	bool isActive();
@@ -44,30 +44,25 @@ private:
 	bool bufferLengthChanged;
 	pthread_mutex_t jackCallbackLock;
 
-	// EventBuffer stores messages from GUI
+	// EventBuffer stores messages from SynthGui.
 	EventBuffer & events;
 
-	// Reference to GUI is needes for SynthGui.endExecution().
-	SynthGui & gui;
+	// SynthParameters stores all oscillator and filter parameters.
+	// It is shared with SynthGui.
+	SynthParameters & parameters;
 
+	// Oscillators generate their sound to these buffers
 	float * oscillatorBuffer;
 	float * lfoBuffer;
 
+	// Oscillator and note data
 	MainOscillator * oscillator1[POLYPHONY];
 	LowFrequencyOscillator * lfo1[POLYPHONY];
 	NoteSource noteSource[POLYPHONY];
 	unsigned char noteKey[POLYPHONY];
 
-	OscillatorParameters osc1parameters;
-
-	LfoFrequencyType lfo1frequencyType;
-	float lfo1fixedFrequency;
-	float lfo1relativeFrequency;
-
+	// Filters
 	LowpassFilter filter;
-
-	// Master volume of the synthesizer output
-	float mainVolume;
 
 	void initJack();
 	static int jackCallback(jack_nframes_t nframes, void * arg);
