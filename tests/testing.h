@@ -14,4 +14,7 @@
 // Defining this makes class EventBuffer print debug messages
 //#define GUI_TESTING
 
+// Defining this makes class Synthesizer print debug messages
+#define SYNTH_TESTING
+
 #endif /* TESTING_H_ */

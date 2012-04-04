@@ -210,6 +210,12 @@ void Synthesizer::generateSound(jack_nframes_t nframes)
 		}
 	}
 
+#ifdef SYNTH_TESTING
+	printOscillatorPhases();
+#endif // SYNTH_TESTING
+
+
+
 	float mixingCoefficent = mainVolume / POLYPHONY;
 	for (i = 0; i < nframes; i++) {
 		outputBuffer[i] *= mixingCoefficent;
@@ -324,7 +330,9 @@ NoteSource source)
 void Synthesizer::processNoteOff(unsigned char key, NoteSource source)
 {
 	for (unsigned int i = 0; i < POLYPHONY; i++) {
-		if (noteKey[i] == key && noteSource[i] == source) {
+		if (noteKey[i] == key && noteSource[i] == source &&
+			oscillator1[i]->getEnvelopePhase() != OFF)
+		{
 			oscillator1[i]->noteOff();
 		}
 	}
@@ -342,8 +350,10 @@ void Synthesizer::processFastMute(NoteSource source)
 void Synthesizer::processParameterChange(unsigned int parameter,
 	unsigned int parameterValue)
 {
+#ifdef SYNTH_TESTING
 	std::cout << "Synthesizer.processParameterChange(" << parameter << "," <<
 		parameterValue << ")" << std::endl;
+#endif // SYNTH_TESTING
 
 	if (parameter < 5) {
 		switch (parameter) {
@@ -398,3 +408,36 @@ void Synthesizer::processParameterChange(unsigned int parameter,
 		}
 	}
 }
+
+#ifdef SYNTH_TESTING
+void Synthesizer::printOscillatorPhases()
+{
+	unsigned int i;
+	bool phasesChanged = false;
+	for (i = 0; i < POLYPHONY; i++) {
+		osc1curPhase[i] = oscillator1[i]->getEnvelopePhase();
+		if (osc1curPhase[i] != osc1prevPhase[i]) {
+			phasesChanged = true;
+		}
+	}
+	if (phasesChanged) {
+		std::cout << "generateSound:";
+		for (i = 0; i < POLYPHONY; i++) {
+			std::cout << "|";
+			switch(osc1curPhase[i]) {
+			case ATTACK: std::cout << "A"; break;
+			case DECAY: std::cout << "D"; break;
+			case SUSTAIN: std::cout << "S"; break;
+			case RELEASE: std::cout << "R"; break;
+			case OFF:     std::cout << " "; break;
+			case FAST_MUTE: std::cout << "M"; break;
+			case RETRIGGER: std::cout << "T"; break;
+			}
+			osc1prevPhase[i] = osc1curPhase[i];
+		}
+		std::cout << std::endl;
+	}
+
+}
+
+#endif // SYNTH_TESTING

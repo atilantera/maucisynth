@@ -11,24 +11,13 @@
 #define NULL 0
 #endif
 
-float MainOscillator::attackTable[ENVELOPE_TABLE_LENGTH];
-float MainOscillator::releaseTable[ENVELOPE_TABLE_LENGTH];
-float MainOscillator::retriggerTable[RETRIGGER_LENGTH];
 
-bool MainOscillator::envelopeTablesInitialized = false;
-
-// curve STEEPNESS in envelope curve
+// Envelope curve steepness
 const float STEEPNESS = 4;
-
 
 MainOscillator::MainOscillator(OscillatorParameters & p) :
 	globalParameters(p)
 {
-	if (!envelopeTablesInitialized) {
-		MainOscillator::initializeEnvelopeTables();
-		envelopeTablesInitialized = true;
-	}
-
 	wavetable = sineTable;
 	dedicatedLfo = NULL;
 
@@ -375,45 +364,6 @@ const float modulatorBuffer[])
     }
 }
 
-// Initializes static members attackTable[] and decayTable[] which contain
-// precalculated parts of envelope curves.
-void MainOscillator::initializeEnvelopeTables()
-{
-	// attackTable[]
-	// Example: if STEEPNESS = 4
-	// b = 1/(1 - e^(-4))  ~= 1.019
-	// f(t) = b * (1 - e^(-4 * t)),  t = 0..1
-	unsigned int i;
-	float relativeTime = 0;
-	float timeIncrease = 1.0 / (ENVELOPE_TABLE_LENGTH - 1);
-	float b = 1 / (1 - expf(-STEEPNESS));
-
-	for (i = 0; i < ENVELOPE_TABLE_LENGTH; i++) {
-		attackTable[i] = b * (1 - expf(-STEEPNESS * relativeTime));
-		relativeTime += timeIncrease;
-	}
-
-	// decayTable[]
-	// Example: if STEEPNESS = 4
-	// b = 1/(1 - e^(-4))  ~= 1.019
-	// f(t) = 1 - b * (1 - e^(-4 * t)),  t = 0..1
-	relativeTime = 0;
-	for (i = 0; i < ENVELOPE_TABLE_LENGTH; i++) {
-		releaseTable[i] = 1 - b * (1 - expf(-STEEPNESS * relativeTime));
-		relativeTime += timeIncrease;
-	}
-
-	// retriggerTable
-	// f(t) = 0.5 * sin((0.5 + t) * pi) + 0.5,   t = 0..1
-	float angle = 0.5 * M_PI;
-	float angleIncrease = M_PI / (RETRIGGER_LENGTH - 1);
-	for (i = 0; i < RETRIGGER_LENGTH; i++) {
-		retriggerTable[i] = 0.5 * sinf(angle) + 0.5;
-		angle += angleIncrease;
-	}
-	retriggerTable[RETRIGGER_LENGTH - 1] = 0;
-}
-
 // Applies amplitude envelope curve to all sound samples in outputBuffer.
 void MainOscillator::applyEnvelope(float outputBuffer[])
 {
@@ -423,19 +373,9 @@ void MainOscillator::applyEnvelope(float outputBuffer[])
     while (i < bufferLength) {
 		switch (envelopePhase) {
 
-		case OFF:
-			for (; i < bufferLength; i++) {
-				outputBuffer[i] = 0;
-			}
-			break;
-
 		case ATTACK:
 			i = applyAttack(outputBuffer, i);
 			break;
-
-        case RETRIGGER:
-            i = applyRetrigger(outputBuffer);
-            break;
 
 		case DECAY:
 			i = applyDecay(outputBuffer, i);
@@ -453,8 +393,18 @@ void MainOscillator::applyEnvelope(float outputBuffer[])
 			i = applyRelease(outputBuffer, i);
 			break;
 
+        case RETRIGGER:
+            i = applyRetrigger(outputBuffer);
+            break;
+
 		case FAST_MUTE:
 			// This is done in generateSound().
+			break;
+
+		case OFF:
+			for (; i < bufferLength; i++) {
+				outputBuffer[i] = 0;
+			}
 			break;
 
 		}
@@ -469,68 +419,82 @@ void MainOscillator::applyEnvelope(float outputBuffer[])
 unsigned int MainOscillator::applyAttack(float outputBuffer[], unsigned int i)
 {
 	unsigned int samplesLeft = attackTime - envelopePhaseTime;
-	float relativeTime = (float)envelopePhaseTime / attackTime;
-	float timeIncrease = 1.0 / (attackTime - 1);
-	float b = 1 / (1 - expf(-STEEPNESS));
-	float amplitude = 0;
+	float t = -STEEPNESS * envelopePhaseTime / attackTime;
+	float tIncrease = -STEEPNESS / (attackTime - 1);
+	float k = 1 / (1 - expf(-STEEPNESS));
 
 	if (samplesLeft > bufferLength) {
-		for (; i < bufferLength; i++) {
-			amplitude = b * (1 - expf(-STEEPNESS * relativeTime));
-			outputBuffer[i] *= amplitude;
-			relativeTime += timeIncrease;
-		}
-		envelopePhaseTime += bufferLength;
-	}
-	else {
-		unsigned int endI = i + samplesLeft;
-		for (; i < endI; i++) {
-			amplitude = b * (1 - expf(-STEEPNESS * relativeTime));
-			outputBuffer[i] *= amplitude;
-			relativeTime += timeIncrease;
-		}
-		envelopePhase = DECAY;
-		envelopePhaseTime = 0;
-	}
-	envelopeAmplitude = amplitude;
-	previousEnvelopePhase = ATTACK;
-
-	return i;
-}
-
-unsigned int MainOscillator::applyAttackTable(float outputBuffer[],
-	unsigned int i)
-{
-	unsigned int samplesLeft = attackTime - envelopePhaseTime;
-
-	float sourceIndex = (float)envelopePhaseTime / attackTime *
-			ENVELOPE_TABLE_LENGTH;
-
-	float indexIncrease = 1.0 / (attackTime - 1) * ENVELOPE_TABLE_LENGTH;
-	float amplitude = 0;
-
-	if (samplesLeft > bufferLength) {
-		// TODO
-		float * ptr = outputBuffer + i;
-		float * endPtr = outputBuffer + bufferLength;
-		for (; i < bufferLength; i++) {
-			outputBuffer[i] *= attackTable[(int)sourceIndex];
-			sourceIndex += indexIncrease;
-		}
 		envelopePhaseTime += bufferLength - i;
+		for (; i < bufferLength; i++) {
+			outputBuffer[i] *= k * (1 - expf(t));
+			t += tIncrease;
+		}
 	}
 	else {
 		unsigned int endI = i + samplesLeft;
 		for (; i < endI; i++) {
-			outputBuffer[i] *= attackTable[(int)sourceIndex];
-			sourceIndex += indexIncrease;
+			outputBuffer[i] *= k * (1 - expf(t));
+			t += tIncrease;
 		}
 		envelopePhase = DECAY;
 		envelopePhaseTime = 0;
 	}
-
-	envelopeAmplitude = amplitude;
+	envelopeAmplitude = k * (1 - expf(t - tIncrease));
 	previousEnvelopePhase = ATTACK;
+
+// Optimized version
+//	if (samplesLeft > bufferLength) {
+//		envelopePhaseTime += bufferLength - i;
+//		for (; i < bufferLength; i++) {
+//			amplitude = k * (1 - expf(t));
+//			outputBuffer[i] *= amplitude;
+//			t += tIncrease;
+//		}
+//
+//	}
+//	else {
+//		unsigned int endI = i + samplesLeft;
+//		for (; i < endI; i++) {
+//			amplitude = k * (1 - expf(t));
+//			outputBuffer[i] *= amplitude;
+//			t += tIncrease;
+//		}
+//		envelopePhase = DECAY;
+//		envelopePhaseTime = 0;
+//	}
+//	envelopeAmplitude = amplitude;
+//	previousEnvelopePhase = ATTACK;
+
+
+//  // Original version
+//	unsigned int samplesLeft = attackTime - envelopePhaseTime;
+//	float relativeTime = (float)envelopePhaseTime / attackTime;
+//	float timeIncrease = 1.0 / (attackTime - 1);
+//	float b = 1 / (1 - expf(-STEEPNESS));
+//	float amplitude = 0;
+//
+//	if (samplesLeft > bufferLength) {
+//		envelopePhaseTime += bufferLength - i;
+//		for (; i < bufferLength; i++) {
+//			amplitude = b * (1 - expf(-STEEPNESS * relativeTime));
+//			outputBuffer[i] *= amplitude;
+//			relativeTime += timeIncrease;
+//		}
+//
+//	}
+//	else {
+//		unsigned int endI = i + samplesLeft;
+//		for (; i < endI; i++) {
+//			amplitude = b * (1 - expf(-STEEPNESS * relativeTime));
+//			outputBuffer[i] *= amplitude;
+//			relativeTime += timeIncrease;
+//		}
+//		envelopePhase = DECAY;
+//		envelopePhaseTime = 0;
+//	}
+//	envelopeAmplitude = amplitude;
+//	previousEnvelopePhase = ATTACK;
+
 	return i;
 }
 
@@ -541,22 +505,12 @@ unsigned int MainOscillator::applyAttackTable(float outputBuffer[],
 // Returns index of next sample to be processed in outputBuffer.
 unsigned int MainOscillator::applyRetrigger(float outputBuffer[])
 {
-//	unsigned int i;
-//	float decrease = envelopeAmplitude / (RETRIGGER_LENGTH - 1);
-//	float amplitude = envelopeAmplitude;
-//
-//    for (i = 0; i < RETRIGGER_LENGTH; i++) {
-//		outputBuffer[i] *= amplitude;
-//		amplitude -= decrease;
-//    }
-//	envelopePhase = ATTACK;
-//	previousEnvelopePhase = RETRIGGER;
-//	envelopePhaseTime = 0;
-//    return RETRIGGER_LENGTH;
-
 	unsigned int i;
+	float angle = 0.5 * M_PI;
+	float angleIncrease = M_PI / RETRIGGER_LENGTH;
 	for (i = 0; i < RETRIGGER_LENGTH; i++) {
-		outputBuffer[i] *= envelopeAmplitude * retriggerTable[i];
+		outputBuffer[i] *= envelopeAmplitude * (0.5 * sinf(angle) + 0.5);
+		angle += angleIncrease;
 	}
 	envelopePhase = ATTACK;
 	previousEnvelopePhase = RETRIGGER;
@@ -579,13 +533,14 @@ unsigned int MainOscillator::applyDecay(float outputBuffer[], unsigned int i)
 	float amplitude = 0;
 
 	if (samplesLeft > bufferLength) {
+		envelopePhaseTime += bufferLength - i;
 		for (; i < bufferLength; i++) {
 			amplitude = 1 - (1 - sustainVolume) * b
 				* (expf(-STEEPNESS * relativeTime) - 1);
 			outputBuffer[i] *= amplitude;
 			relativeTime += timeIncrease;
 		}
-		envelopePhaseTime += bufferLength - i;
+
 	}
 	else {
 		unsigned int endI = i + samplesLeft;
@@ -634,7 +589,6 @@ unsigned int MainOscillator::applyRelease(float outputBuffer[], unsigned int i)
 	else {
 		unsigned int endI = i + samplesLeft;
 		for (; i < endI; i++) {
-//			amplitude = sustainVolume -	sustainVolume * b * (expf(-STEEPNESS * relativeTime) - 1);
             amplitude = previousEnvelopeAmplitude *
                 (1 - b * (expf(-STEEPNESS * relativeTime) - 1));
 			outputBuffer[i] *= amplitude;

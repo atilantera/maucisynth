@@ -84,6 +84,14 @@ private:
 	void processFastMute(NoteSource source);
 	void processParameterChange(unsigned int parameter,
 		unsigned int parameterValue);
+
+#ifdef SYNTH_TESTING
+	// for testing purposes
+	EnvelopePhase osc1curPhase[POLYPHONY];
+	EnvelopePhase osc1prevPhase[POLYPHONY];
+	void printOscillatorPhases();
+#endif
+
 };
 
 #endif /* SYNTHESIZER_H_ */

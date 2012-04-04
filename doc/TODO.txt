@@ -2,6 +2,11 @@ Tehtävää aika- ja riippuvuusjärjestyksessä:
 
 1. Synthesizer-luokka
 
+   Optimoi MainOscillator::applyAttack().
+     * vieläkö pointtereita taulukkoindeksien sijaan?
+
+   Sovella optimointia myös Decayhyn ja Releaseen.
+
    Missäs vaiheessa LFO:iden taajuudet päivitetään?
    Nyt parametrinkäsittelyssä taajuus päivittyy vain osc1parameters-
    kenttiin!

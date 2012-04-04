@@ -1,5 +1,8 @@
-Optimization possibilities of maucisynth
-----------------------------------------
+Optimizations of maucisynth
+---------------------------
+
+Using precalculated table values of the sine function instead of calling
+sinf() for every sample is TWO TIMES FASTER.
 
 Compiler optimization
 GCC: -O2 -march=athlon-xp

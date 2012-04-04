@@ -7,6 +7,12 @@ b = 1 / (1 - e^(-s))
 f(x) = b * (1 - e^(-s * x))
 x = 0..1
 
+    optimization:
+    t = -s * x
+    f(t) = b * (1 - e^t)
+         
+         
+    
 Decay:
 
 s = 4
