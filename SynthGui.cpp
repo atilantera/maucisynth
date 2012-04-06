@@ -73,9 +73,12 @@ void SynthGui::createFilterControls() {
 
 	vscale = gtk_vscale_new_with_range(MinLowpassFrequency,
 			MaxLowpassFrequency, 50);
-	gtk_widget_set_size_request(GTK_WIDGET(vscale), 32, 128);
+	gtk_widget_set_size_request(GTK_WIDGET(vscale), 40, 128);
 	gtk_range_set_inverted(GTK_RANGE(vscale), TRUE);
 	gtk_range_set_update_policy(GTK_RANGE(vscale), GTK_UPDATE_CONTINUOUS);
+	gtk_range_set_value(GTK_RANGE(vscale),
+			(MinLowpassFrequency + MaxLowpassFrequency) / 2);
+
 	g_signal_connect(vscale, "value_changed",
 		G_CALLBACK(SynthGui::sliderChangeCallback),
 		(gpointer)"lowpassFilterFrequency");

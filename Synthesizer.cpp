@@ -30,6 +30,7 @@ Synthesizer::Synthesizer(EventBuffer & b, SynthParameters & p):
 	initJack();
 	Oscillator::setSamplerate(samplerate);
 	Oscillator::setBufferLength(bufferLength);
+	filter.setSamplerate(samplerate);
 
 	oscillatorBuffer = new float[bufferLength];
 	lfoBuffer = new float[bufferLength];
@@ -210,6 +211,8 @@ void Synthesizer::generateSound(jack_nframes_t nframes)
 	for (i = 0; i < nframes; i++) {
 		outputBuffer[i] *= mixingCoefficent;
 	}
+
+	filter.doFiltering(outputBuffer, bufferLength);
 }
 
 int Synthesizer::updateSamplerate(jack_nframes_t nframes, void *arg)

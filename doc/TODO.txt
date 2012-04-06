@@ -1,26 +1,9 @@
 Tehtävää aika- ja riippuvuusjärjestyksessä:
 
-1. Synthesizer-luokka
-
-   Sovella optimointia myös Decayhyn ja Releaseen.
-   Kuin myös ehkä sawtoothiin, pulseen ja triangleen.
-   Trianglessakin voisi olla vain kaksi vaihetta nykyisen kolmen sijaan.
-
-   Missäs vaiheessa LFO:iden taajuudet päivitetään?
-   Nyt parametrinkäsittelyssä taajuus päivittyy vain osc1parameters-
-   kenttiin!
-
-   * Parametri- ja nuottieventtien käsittelyt ovat jo valmiit.
-   Metodi generateSound: seuraavaksi LFO toimimaan.
-     
-       
-   
-
-   Kun LFO:n taajuus riippuu pääoskillaattorin taajuudesta, niin
-   pääoskillaattorin pärähtäessä soimaan se asettaa LFO:n taajuuden.
-   (Pääoskillaattorissa on viittaus sille varattuun LFO:hon.)
-
 2. luokka LowpassFilter
+   * Lisää vielä rätisemätön rajataajuuden muutos.
+   * Lisää mahdollisuus ottaa suodatin kokonaan pois käytöstä
+     (jos joku haluaa tosi kirkasta ääntä).
 
 3. Mitä tehdä, kun tulee note on, ja kaikki oskillaattorit ovat varattu?
    Jos ruvetaan korvaamaan vanhoja nuotteja uusilla, niin MIDIn note

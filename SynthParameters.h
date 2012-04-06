@@ -57,9 +57,10 @@ enum LfoModulationTarget {
 enum NoteSource { computerKeyboard = 1, JACK = 2};
 
 const unsigned int maxVelocity = 127;
+const unsigned int maxSamplerate = 128000;
 
 const float MinFixedLfoFrequency = 0.1;
-const float MaxFixedLfoFrequency = 10;
+const float MaxFixedLfoFrequency = 50;
 
 const float MinRelativeLfoFrequency = 0.01;
 const float MaxRelativeLfoFrequency = 0.5;
@@ -69,7 +70,7 @@ const float MaxLfoModulation = 1;
 
 // LowPassFrequency is in Hz.
 const unsigned int MinLowpassFrequency = 100;
-const unsigned int MaxLowpassFrequency = 10000;
+const unsigned int MaxLowpassFrequency = 20000;
 
 // ADSR times are in milliseconds.
 const unsigned int MinAttackTime = 5;
