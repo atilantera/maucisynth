@@ -36,7 +36,8 @@ Synthesizer::Synthesizer(EventBuffer & b, SynthParameters & p):
 
 	for (i = 0; i < POLYPHONY; i++) {
 		oscillator1[i] = new MainOscillator(parameters.osc1);
-		lfo1[i] = new LowFrequencyOscillator(parameters.osc1);
+		lfo1[i] = new LowFrequencyOscillator(parameters.osc1,
+		                                     *(oscillator1[i]) );
 	}
 
 	if (lfo1[POLYPHONY - 1] == NULL) {
@@ -116,6 +117,10 @@ void Synthesizer::initJack()
 	synthIsRunning = true;
 }
 
+// Function that JACK calls when more sound data is needed.
+// Parameter nframes is the JACK sound buffer length. It should be equal to
+// synthInstance->bufferLength. Buffer length is typically 128..1024 samples.
+// Parameter arg is not used.
 int Synthesizer::jackCallback(jack_nframes_t nframes, void * arg)
 {
     if (callbackAlreadyRunning) {
@@ -169,12 +174,7 @@ void Synthesizer::generateSound(jack_nframes_t nframes)
 	// Oscillator group 1
 	bool useGlobalLfo = false;
 	bool useDedicatedLfo = false;
-	if (parameters.osc1.lfoModulationTarget == FREQUENCY ||
-		parameters.osc1.lfoModulationTarget == PULSE_WIDTH)
-	{
-		useGlobalLfo = true;
-	}
-	if (parameters.osc1.lfoModulationTarget == AMPLITUDE) {
+	if (parameters.osc1.lfoModulationTarget != NONE) {
 		if (parameters.osc1.lfoFrequencyType == RELATIVE) {
 			useDedicatedLfo = true;
 		}
@@ -184,18 +184,15 @@ void Synthesizer::generateSound(jack_nframes_t nframes)
 	}
 
 	if (useGlobalLfo) {
-		// TODO
+		lfo1[0]->generateSound(lfoBuffer);
 	}
-
-	// TODO: remove this line when ready for LFO testing
-	parameters.osc1.lfoModulationTarget = NONE;
 
 	unsigned int oscNum, i;
 	bool noteFinished;
 	for (oscNum = 0; oscNum < POLYPHONY; oscNum++) {
 		if (oscillator1[oscNum]->getEnvelopePhase() != OFF) {
 			if (useDedicatedLfo) {
-				// TODO
+				lfo1[oscNum]->generateSound(lfoBuffer);
 			}
 			oscillator1[oscNum]->generateSound(oscillatorBuffer, lfoBuffer,
 				noteFinished);

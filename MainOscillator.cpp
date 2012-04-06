@@ -19,7 +19,6 @@ MainOscillator::MainOscillator(OscillatorParameters & p) :
 	globalParameters(p)
 {
 	wavetable = sineTable;
-	dedicatedLfo = NULL;
 
 	envelopePhase = OFF;
 	previousEnvelopePhase = OFF;
@@ -36,14 +35,6 @@ MainOscillator::MainOscillator(OscillatorParameters & p) :
 }
 
 MainOscillator::~MainOscillator() {
-}
-
-// Sets a LowFrequencyOscillator whose relative frequency this
-// MainOscillator changes at "note on" events when frequency type
-// is RELATIVE.
-void MainOscillator::setDedicatedLfo(LowFrequencyOscillator * lfo)
-{
-	dedicatedLfo = lfo;
 }
 
 // Sets oscillator base frequency and maximum amplitude.
@@ -76,10 +67,6 @@ void MainOscillator::noteOn(unsigned char noteKey, unsigned char noteVelocity,
 		noteVelocity = 127;
 	}
 	peakAmplitude = (float)noteVelocity / 127;
-
-	if (globalParameters.lfoFrequencyType == RELATIVE && dedicatedLfo != NULL) {
-		dedicatedLfo->updateRelativeFrequency(frequency);
-	}
 
 }
 

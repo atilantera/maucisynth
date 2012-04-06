@@ -9,7 +9,8 @@
 
 const unsigned int testBufferLength = 40;
 
-LfoTest::LfoTest() : LowFrequencyOscillator(parameters)
+LfoTest::LfoTest() : LowFrequencyOscillator(parameters, mainOscillator),
+mainOscillator(parameters)
 {
 	// Random seed must be a constant so that test can be exactly repeatable
 	srandom(0);

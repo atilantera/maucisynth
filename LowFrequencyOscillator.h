@@ -9,18 +9,30 @@
 #define LOWFREQUENCYOSCILLATOR_H_
 
 #include "Oscillator.h"
+#include "MainOscillator.h"
 #include "SynthParameters.h"
 
 class LowFrequencyOscillator : public Oscillator {
 public:
-	LowFrequencyOscillator(OscillatorParameters & p);
+	LowFrequencyOscillator(OscillatorParameters & p, MainOscillator & m);
 	virtual ~LowFrequencyOscillator() {}
 
+	void setRelativeOscillator(MainOscillator * osc);
 	void updateRelativeFrequency(float mainOscFrequency);
 	void generateSound(float buffer[]);
 
 private:
 	OscillatorParameters & globalParameters;
+	MainOscillator & mainOscillator;
+
+	// These are copies of fields in globalParameters
+	LfoFrequencyType frequencyType;
+	float fixedFrequency;
+	float relativeFrequency;
+
+	float mainOscFrequency;
+
+	inline void refreshParameters();
 
 };
 

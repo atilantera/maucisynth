@@ -59,9 +59,9 @@ enum NoteSource { computerKeyboard = 1, JACK = 2};
 const unsigned int maxVelocity = 127;
 
 const float MinFixedLfoFrequency = 0.1;
-const float MaxFixedLfoFrequency = 50;
+const float MaxFixedLfoFrequency = 10;
 
-const float MinRelativeLfoFrequency = 0.05;
+const float MinRelativeLfoFrequency = 0.01;
 const float MaxRelativeLfoFrequency = 0.5;
 
 const float MinLfoModulation = 0.01;

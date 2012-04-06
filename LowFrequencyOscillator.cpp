@@ -7,15 +7,30 @@
 
 #include "LowFrequencyOscillator.h"
 
-LowFrequencyOscillator::LowFrequencyOscillator(OscillatorParameters & p) :
-globalParameters(p) { }
+LowFrequencyOscillator::LowFrequencyOscillator(OscillatorParameters & p,
+	MainOscillator & m):
+globalParameters(p), mainOscillator(m)
+{
+	fixedFrequency = globalParameters.lfoFixedFrequency;
+	setFrequency(fixedFrequency);
+}
 
-void LowFrequencyOscillator::generateSound(float buffer[]) {
+
+void LowFrequencyOscillator::updateRelativeFrequency(float mainOscFrequency)
+{
+	setFrequency(globalParameters.lfoRelativeFrequency * mainOscFrequency);
+}
+
+void LowFrequencyOscillator::generateSound(float buffer[])
+{
+	refreshParameters();
+
 	// With pulse width modulation, 70% on-pulse / 30% off-pulse sounds
     // the same to the ear as 30% on-pulse / 70% off-pulse.
     // Therefore in a single sine wave lfo cycle there is _two_ points
     // where the wave sounds the same, and therefore we need to split
     // the frequency.
+
 	float increase = anglePerSample;
     if (globalParameters.lfoModulationTarget == PULSE_WIDTH) {
     	increase *= 0.5;
@@ -31,7 +46,35 @@ void LowFrequencyOscillator::generateSound(float buffer[]) {
 	}
 }
 
-void LowFrequencyOscillator::updateRelativeFrequency(float mainOscFrequency)
+void LowFrequencyOscillator::refreshParameters()
 {
-	setFrequency(globalParameters.lfoRelativeFrequency * mainOscFrequency);
+	if (frequencyType != globalParameters.lfoFrequencyType) {
+		frequencyType = globalParameters.lfoFrequencyType;
+		if (frequencyType == FIXED) {
+			fixedFrequency = globalParameters.lfoFixedFrequency;
+			setFrequency(fixedFrequency);
+		}
+		else {
+			relativeFrequency = globalParameters.lfoRelativeFrequency;
+			mainOscFrequency = mainOscillator.getFrequency();
+			setFrequency(relativeFrequency * mainOscFrequency);
+		}
+		return;
+	}
+
+	if (frequencyType == FIXED &&
+		fixedFrequency != globalParameters.lfoFixedFrequency)
+	{
+		fixedFrequency = globalParameters.lfoFixedFrequency;
+		setFrequency(fixedFrequency);
+	}
+
+	if (frequencyType == RELATIVE &&
+		(relativeFrequency != globalParameters.lfoRelativeFrequency ||
+		 mainOscFrequency != mainOscillator.getFrequency()))
+	{
+		relativeFrequency = globalParameters.lfoRelativeFrequency;
+		mainOscFrequency = mainOscillator.getFrequency();
+		setFrequency(relativeFrequency * mainOscFrequency);
+	}
 }

@@ -22,6 +22,7 @@ public:
 
 private:
 	OscillatorParameters parameters;
+	MainOscillator mainOscillator;
 };
 
 #endif /* LFOTEST_H_ */

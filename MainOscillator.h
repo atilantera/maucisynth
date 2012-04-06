@@ -16,7 +16,6 @@
 
 #include <cstring>
 #include "Oscillator.h"
-#include "LowFrequencyOscillator.h"
 #include "SynthParameters.h"
 
 #include "tests/testing.h"
@@ -35,7 +34,6 @@ public:
 	MainOscillator(OscillatorParameters & p);
 	virtual ~MainOscillator();
 
-	void setDedicatedLfo(LowFrequencyOscillator * lfo);
 	void noteOn(unsigned char noteKey, unsigned char noteVelocity,
         bool retrigger);
 	void noteOff();
@@ -56,7 +54,6 @@ protected:
 	unsigned int releaseTime;
 
 	OscillatorParameters & globalParameters;
-	LowFrequencyOscillator * dedicatedLfo;
 
 	// Dynamic parameter: Peak amplitude of the oscillator. MIDI note velocity
 	// determines this. It is coefficent between 0..1.

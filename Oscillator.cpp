@@ -50,7 +50,7 @@ void Oscillator::setBufferLength(unsigned int lengthInSamples)
 
 void Oscillator::setFrequency(float f)
 {
-	if (f < 1) {
+	if (f <= 0) {
 		return;
 	}
 
@@ -63,7 +63,6 @@ float Oscillator::getFrequency() const
 {
 	return frequency;
 }
-
 
 void Oscillator::debugCheckTables(const char * message)
 {

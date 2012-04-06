@@ -30,7 +30,11 @@ Tehtävää aika- ja riippuvuusjärjestyksessä:
 
 5. Lisää MIDI-tuki
 5.1 Tarkista, että MainOscillatorin envelope-jutskissa on huomioitu
-    nuotin velocity   
+    nuotin velocity
+5.3 Note on ja Note off
+5.4 Säädettävä MIDI-kanava (1..16), jolla syna reagoi
+5.5 Kanavan äänenvoimakkuus ja panorointi -kontrollerit
+5.6 Pitch bend?
    
 
 
