@@ -24,7 +24,7 @@ OscillatorParameters::OscillatorParameters()
 
 SynthParameters::SynthParameters()
 {
-	lowpassFrequency = MinLowpassFrequency;
+	lowpassFrequency = 0.5 * (MaxLowpassFrequency + MinLowpassFrequency);
 	mainVolume = 1;
 }
 

@@ -1,6 +1,8 @@
 /*
  * LowpassFilter.h
  *
+ * Provides a simple lowpass filter.
+ *
  *  Created on: 26.3.2012
  *      Author: alkim
  */

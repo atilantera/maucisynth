@@ -41,3 +41,25 @@ Processor cache usage
 Multicore
 * Sounds of simultaneously playing oscillators could easily be calculated
   on different threads, each thread for one processor core.
+  
+
+Optimized sine function calculation
+* We use 32-bit floats which have precision of 7 most significant decimal
+  digits.
+* Taylor approximations:
+    degree 5: sin(x) ~= x - x^3/3! + x^5/5!
+    degree 7: sin(x) ~= x - x^3/3! + x^5/5! - x^7/7!
+    degree 9: sin(x) ~= x - x^3/3! + x^5/5! - x^7/7!
+    
+  Accuracy:
+  
+              e r r o r
+  degree  -pi..pi   -pi/2..pi/2
+  -----------------------------
+     5     0.5         0.005
+     7     0.08        0.0002
+     9     0.007       0.000004
+  
+  Symmetry:
+  sin(x) = sin(pi - x),  pi/2 < x < pi
+  sin(x) = sin(pi - x), -pi  <  x < -pi/2

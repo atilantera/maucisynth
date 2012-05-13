@@ -54,7 +54,7 @@ enum LfoModulationTarget {
 	PULSE_WIDTH = 3
 };
 
-enum NoteSource { computerKeyboard = 1, JACK = 2};
+enum NoteSource { computerKeyboard = 1, jackMidi = 2};
 
 const unsigned int maxVelocity = 127;
 const unsigned int maxSamplerate = 128000;

@@ -1,9 +1,75 @@
 Tehtävää aika- ja riippuvuusjärjestyksessä:
 
+0. BUGI: Realtimena maucisynth vie jostain syystä lähes kaiken suoritinajan.
+   päädy SynthParameters-olioon asti.
+   
+   LFO:n alimmaksi taajuudeksi vielä alempi kuin 0,1 Hz.
+
+5. Lisää MIDI-tuki
+* MainOscillatoriin/Synthesizeriin pitää saada viivästytetty Note On ja
+  Note On (viivästys n samplea): vasta sen jälkeen envelope alkaa muuttua.
+  Tämä luultavasti saa tremolot (saman nuotin nopea toisto) toimimaan.
+
+  Lienee helppo tehdä: MainOscillatoriin kentät
+  bool envelopeChangeHappens
+  unsigned int envelopeChangeTime   (sampleja)
+  jotain newEnvelope
+  
+  applyEnvelope-metodiin ennen while (i < bufferLength) -silmukkaa
+  toinen samanlainen silmukka:
+  if (envelopeChangeHappens) {
+      while (i < envelopeChangeTime) {
+          generoi envelopet kuten normaalisti, switch-lause
+      }
+      envelopeChangeHappens = false;
+      envelopePhase = newEnvelope;
+  }
+
+  PAITSI ETTÄ oikeasti pitää pystyä tallentamaan n kpl note off/onia.
+  Mikä on n? Se riippuu puskurikoosta. Voi olettaa, että tremolo on enitään
+  64-osanuotteja jollain 240 bpm:llä.
+  240 4-osanuottia minuutissa = 4 4-osanuottia sekunnissa
+                              = 64 64-osanuottia sekunnissa
+  Yksi 64-osanuotti on tällöin 1/64 s = 0,0156 s.
+  
+  JACKin pisin puskurikoko lienee 4096 samplea.
+  Kun samplerate on 44100, niin maksimikoolla puskurin pituus on
+  Mitä suurempi samplerate, sitä lyhyempi puskurin pituus on ajassa, kun
+  puskurikoko on vakio (4096 samplea). 44100 Hz sampleratea voidaan pitää
+  alarajana.
+  
+  4096/44100 s = 0,093 s.                        
+  Montako 64-osanuottia 240 bpm:llä tähän mahtuu?
+  0,093 / 0,0156 = 6 (pyöristettynä ylöspäin).
+  Jokaisesta nuotista on note on ja note off, eli 12 tapahtumaa.
+  Voidaan vielä pyöristää ylöspäin 16:een.
+  Yhdelle tapahtumalle riittäisi OSKILLAATTORIN OMASSA TAPAHTUMAPUSKURISSA
+  16 bittiä (unsigned short int): alimmat 15 bittiä ilmaisevat tapahtuman
+  aikasijainnin nykyisessä samplepuskurissa (0..32767). Ylin 15. bitti
+  tulkitaan seuraavasti: jos se on 1, niin kyseessä on note on. Muuten kyseessä
+  on note off.  
+  
+  
+
+5.4 Säädettävä MIDI-kanava (1..16), jolla syna reagoi
+    * Tämä on jo olemassa: Synthesizer::midiInChannel.
+    Pitää vain tehdä lisäys GUIhin.
+5.5 Kanavan äänenvoimakkuus ja panorointi -kontrollerit
+5.6 Pitch bend?
+
+
+1. Assembler-jutskat eivät ihan vielä toimi. (tests/AsmFunctions.s)
+   
+ 
+
 2. luokka LowpassFilter
    * Lisää vielä rätisemätön rajataajuuden muutos.
    * Lisää mahdollisuus ottaa suodatin kokonaan pois käytöstä
      (jos joku haluaa tosi kirkasta ääntä).
+     
+   Teoriaa: nyt alipäästösuodatin ottaa vain keskiarvoja. Periaatteessa
+   ylempien taajuuksien laskostumista ei pitäisi tapahtua (eihän kohinaakaan
+   kuulu), mutta sinc-funktio konvoluution perustana olisi silti parempi.
 
 3. Mitä tehdä, kun tulee note on, ja kaikki oskillaattorit ovat varattu?
    Jos ruvetaan korvaamaan vanhoja nuotteja uusilla, niin MIDIn note
@@ -11,13 +77,7 @@ Tehtävää aika- ja riippuvuusjärjestyksessä:
 
 4. Lisää main volume -säädin GUIhin. Kohde: SynthParameters.mainVolume.
 
-5. Lisää MIDI-tuki
-5.1 Tarkista, että MainOscillatorin envelope-jutskissa on huomioitu
-    nuotin velocity
-5.3 Note on ja Note off
-5.4 Säädettävä MIDI-kanava (1..16), jolla syna reagoi
-5.5 Kanavan äänenvoimakkuus ja panorointi -kontrollerit
-5.6 Pitch bend?
+
    
 
 

@@ -1,5 +1,6 @@
 /*
  * SynthGui.h
+ *
  * SynthGui contains all GUI functionality: window, widgets.
  * It also captures key presses and releases from the computer keyboard
  * when the GUI window is active.

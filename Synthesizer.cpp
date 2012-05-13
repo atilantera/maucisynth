@@ -8,8 +8,8 @@
 #include "Synthesizer.h"
 
 Synthesizer * Synthesizer::synthInstance = NULL;
-bool Synthesizer::callbackAlreadyRunning = false;
 
+//
 Synthesizer::Synthesizer(EventBuffer & b, SynthParameters & p):
 	events(b), parameters(p), filter(p.lowpassFrequency)
 {
@@ -45,6 +45,16 @@ Synthesizer::Synthesizer(EventBuffer & b, SynthParameters & p):
 		std::cout << "Problem in starting the synth: not enough free memory."
 			<< std::endl;
 	}
+
+	// Now everything is ready for sound rendering.
+	// The following code requests JACK to start calling
+	// Synthesizer::jackCallback().
+	if (jack_activate (jackClient) != 0) {
+		std::cout << "Problem in starting the synth: cannot activate "
+			"JACK client" << std::endl;
+		return;
+	}
+	synthIsRunning = true;
 }
 
 Synthesizer::~Synthesizer() {
@@ -67,6 +77,7 @@ bool Synthesizer::isActive()
 	return synthIsRunning;
 }
 
+// Creates audio output and MIDI input ports into JACK
 void Synthesizer::initJack()
 {
 	jack_options_t options = JackNoStartServer;
@@ -75,7 +86,8 @@ void Synthesizer::initJack()
 	if (jackClient == NULL) {
 		std::cout << "Problem in starting the synth. ";
 		if (status & JackServerFailed) {
-			std::cout << "Cannot connect to the JACK server.";
+			std::cout << "Cannot connect to the JACK server. Maybe the JACK "
+			"server program (jackd or QJackCtl) is not running.";
 		}
 		if (status & JackServerError) {
 			std::cout << "Communication error with the JACK server.";
@@ -99,45 +111,43 @@ void Synthesizer::initJack()
 	jack_set_buffer_size_callback(jackClient, Synthesizer::updateBufferLength,
 		0);
 
-	// JACK sample data is always 32 bit float
+	// JACK sample data is always 32 bit float.
+	// The string constant "32 bit float mono audio" is the same as
+	// constant JACK_DEFAULT_AUDIO_TYPE in <jack/types.h>.
 	jackOutputPort = jack_port_register (jackClient, "out",
-			"32 bit float mono audio", JackPortIsOutput, 0);
+			"32 bit float mono audio", JackPortIsOutput | JackPortIsTerminal,
+			0);
 	if (jackOutputPort == NULL) {
 		std::cout << "Problem in starting the synth: cannot register "
-			"an output port in JACK." << std::endl;
+			"the output port in JACK." << std::endl;
+	}
+
+	jackMidiInPort = jack_port_register(jackClient, "midi_in",
+			JACK_DEFAULT_MIDI_TYPE, JackPortIsInput | JackPortIsTerminal, 0);
+	if (jackMidiInPort == NULL) {
+		std::cout << "Problem in starting the synth: cannot register "
+			"the MIDI in port in JACK." << std::endl;
 	}
 
 	samplerate = jack_get_sample_rate(jackClient);
 	bufferLength = jack_get_buffer_size(jackClient);
-
-	if (jack_activate (jackClient) != 0) {
-		std::cout << "Problem in starting the synth: cannot activate "
-			"JACK client" << std::endl;
-		return;
-	}
-	synthIsRunning = true;
+	midiInChannel = 0;
 }
 
 // Function that JACK calls when more sound data is needed.
 // Parameter nframes is the JACK sound buffer length. It should be equal to
-// synthInstance->bufferLength. Buffer length is typically 128..1024 samples.
+// synthInstance->bufferLength. Buffer length is typically 16..4096 samples.
 // Parameter arg is not used.
 int Synthesizer::jackCallback(jack_nframes_t nframes, void * arg)
 {
-    if (callbackAlreadyRunning) {
-        std::cout << "Synthesizer::jackCallback: another callback running!"
-            << std::endl;
-        return 0;
-    }
-
-    callbackAlreadyRunning = true;
-	synthInstance->processEvents();
+	synthInstance->processGuiEvents();
+	synthInstance->processMidiEvents(nframes);
 	synthInstance->checkJackExceptions();
 	synthInstance->generateSound(nframes);
-    callbackAlreadyRunning = false;
 	return 0;
 }
 
+// Handles samplerate and JACK audio buffer length changes.
 void Synthesizer::checkJackExceptions()
 {
 	pthread_mutex_lock(&jackCallbackLock);
@@ -165,6 +175,8 @@ void Synthesizer::checkJackExceptions()
 	pthread_mutex_unlock(&jackCallbackLock);
 }
 
+// Synthesizes sound of the current notes and mixes the sound of the notes.
+// Parameter nframes is number of samples to render.
 void Synthesizer::generateSound(jack_nframes_t nframes)
 {
 	float * outputBuffer =
@@ -215,6 +227,9 @@ void Synthesizer::generateSound(jack_nframes_t nframes)
 	filter.doFiltering(outputBuffer, bufferLength);
 }
 
+// JACK callback: samplerate changes
+// Parameter nframes = samples per second.
+// Parameter arg is not used.
 int Synthesizer::updateSamplerate(jack_nframes_t nframes, void *arg)
 {
 	if (nframes != synthInstance->samplerate) {
@@ -226,7 +241,10 @@ int Synthesizer::updateSamplerate(jack_nframes_t nframes, void *arg)
 	return 0;
 }
 
-int Synthesizer::updateBufferLength(jack_nframes_t nframes, void *arg)
+// JACK callback: buffer length changes
+// Parameter nframes = buffer length in samples
+// Parameter arg is not used.
+int Synthesizer::updateBufferLength(jack_nframes_t nframes, void * arg)
 {
 	if (nframes != synthInstance->bufferLength) {
 		pthread_mutex_lock(&(synthInstance->jackCallbackLock));
@@ -237,7 +255,8 @@ int Synthesizer::updateBufferLength(jack_nframes_t nframes, void *arg)
 	return 0;
 }
 
-void Synthesizer::processEvents()
+// Processes events sent by GUI through an EventBuffer.
+void Synthesizer::processGuiEvents()
 {
 	unsigned int dataLength = 0;
 	unsigned char * ptr = events.swapBuffers(&dataLength);
@@ -253,8 +272,8 @@ void Synthesizer::processEvents()
 		case 0x01: /* note on */
 		key = *ptr++;
 		velocity = *ptr++;
-		if (*ptr++ == JACK) {
-			source = JACK;
+		if (*ptr++ == jackMidi) {
+			source = jackMidi;
 		}
 		else {
 			source = computerKeyboard;
@@ -264,8 +283,8 @@ void Synthesizer::processEvents()
 
 		case 0x02: /* note off */
 		key = *ptr++;
-		if (*ptr++ == JACK) {
-			source = JACK;
+		if (*ptr++ == jackMidi) {
+			source = jackMidi;
 		}
 		else {
 			source = computerKeyboard;
@@ -274,8 +293,8 @@ void Synthesizer::processEvents()
 		break;
 
 		case 0x03: /* all notes off */
-		if (*ptr++ == JACK) {
-			source = JACK;
+		if (*ptr++ == jackMidi) {
+			source = jackMidi;
 		}
 		else {
 			source = computerKeyboard;
@@ -294,6 +313,71 @@ void Synthesizer::processEvents()
 
 }
 
+// Processes MIDI events from JACK.
+void Synthesizer::processMidiEvents(jack_nframes_t nframes)
+{
+	void * midiBuffer = jack_port_get_buffer(jackMidiInPort, nframes);
+
+	jack_nframes_t eventCount;
+	eventCount = jack_midi_get_event_count(midiBuffer);
+
+	jack_nframes_t eventNumber;
+	jack_midi_event_t event;
+	unsigned char * ptr;
+	unsigned char * endPtr;
+	unsigned char channel;
+	for (eventNumber = 0; eventNumber < eventCount; eventNumber++) {
+
+		jack_midi_event_get(&event, midiBuffer, eventNumber);
+
+		ptr = event.buffer;
+		channel = *ptr & 0x0F;
+		if (channel != this->midiInChannel) {
+			continue;
+		}
+		switch (*ptr & 0xF0) {
+		case 0x80: // Note Off
+			processNoteOff(ptr[1], jackMidi);
+			break;
+
+		case 0x90: // Note on
+			processNoteOn(ptr[1], ptr[2], jackMidi);
+			break;
+
+
+		case 0xB0: // Controller change
+			processMidiControlChange(ptr[1], ptr[2]);
+			break;
+
+		}
+
+		// Print event data
+		std::cout << "MIDI Event: time=" << event.time << ", data:";
+		std::cout << std::hex;
+		ptr = (unsigned char *) event.buffer;
+		endPtr = ptr + event.size;
+		while (ptr < endPtr) {
+			std::cout << " " << (int)(*ptr);
+			ptr++;
+		}
+		std::cout << std::endl << std::dec;
+	}
+	std::cout.flush();
+}
+
+// Processes MIDI "control change" event
+void Synthesizer::processMidiControlChange(unsigned char type,
+	unsigned char value)
+{
+	switch (type) {
+	// case 0x07: // Channel volume (MSB)
+	// case 0x27: // Channel volume (LSB)
+	case 0x7b: // All notes off
+		processFastMute(jackMidi);
+	}
+}
+
+// Processes a "Note on" event from GUI or JACK MIDI port.
 void Synthesizer::processNoteOn(unsigned char key, unsigned char velocity,
 NoteSource source)
 {
@@ -320,6 +404,7 @@ NoteSource source)
 	}
 }
 
+// Processes a "Note off" event from GUI or JACK MIDI port.
 void Synthesizer::processNoteOff(unsigned char key, NoteSource source)
 {
 	for (unsigned int i = 0; i < POLYPHONY; i++) {
@@ -331,6 +416,7 @@ void Synthesizer::processNoteOff(unsigned char key, NoteSource source)
 	}
 }
 
+// Processes an "All notes off" event from GUI or JACK MIDI port.
 void Synthesizer::processFastMute(NoteSource source)
 {
 	for (unsigned int i = 0; i < POLYPHONY; i++) {
@@ -340,6 +426,7 @@ void Synthesizer::processFastMute(NoteSource source)
 	}
 }
 
+// Processes a "Parameter change" event from GUI or JACK MIDI port.
 void Synthesizer::processParameterChange(unsigned int parameter,
 	unsigned int parameterValue)
 {
@@ -403,6 +490,8 @@ void Synthesizer::processParameterChange(unsigned int parameter,
 }
 
 #ifdef SYNTH_TESTING
+// Test method that prints the envelope curve phase of all oscillators
+// when the phase of some oscillator changes.
 void Synthesizer::printOscillatorPhases()
 {
 	unsigned int i;

@@ -17,6 +17,7 @@
 #include <string>
 #include "../MainOscillator.h"
 
+
 const unsigned int POLYPHONY = 20;
 const unsigned int BUFFER_LENGTH = 128;
 const unsigned int SAMPLE_RATE = 44100;
@@ -30,6 +31,10 @@ public:
     void printUsageText();
 	void renderingSpeedTest();
     void tableVsSinTest();
+    double ownSineTest(float * outputBuffer);
+
+    void asmSineTest();
+    void pipelineTest();
 
 private:
 	OscillatorParameters parameters;

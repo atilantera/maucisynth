@@ -3,6 +3,12 @@
  *
  *  Created on: 11.3.2012
  *      Author: alkim
+ *
+ * The Synthesizer class receives messages (parameter changes, notes) from
+ * GUI and JACK. It keeps track which oscillators are playing notes, and
+ * delegates the actual sound synthesis to the MainOscillator and
+ * LowFrequencyOscillator classes. Then it mixes the sound of the oscillators
+ * and sends it to JACK.
  */
 
 #ifndef SYNTHESIZER_H_
@@ -11,6 +17,7 @@
 #include <cstring>
 #include <iostream>
 #include <jack/jack.h>
+#include <jack/midiport.h>
 #include <jack/thread.h>
 #include <pthread.h>
 
@@ -34,12 +41,13 @@ public:
 private:
 	// JACK I/O
 	jack_port_t * jackOutputPort;
+	jack_port_t * jackMidiInPort;
 	jack_client_t * jackClient;
 	bool synthIsRunning;
-    static bool callbackAlreadyRunning;
 	static Synthesizer * synthInstance;
 	unsigned int samplerate;
 	unsigned int bufferLength;
+	unsigned char midiInChannel;
 	bool samplerateChanged;
 	bool bufferLengthChanged;
 	pthread_mutex_t jackCallbackLock;
@@ -72,7 +80,9 @@ private:
 	void checkJackExceptions();
 	void generateSound(jack_nframes_t nframes);
 
-	void processEvents();
+	void processGuiEvents();
+	void processMidiEvents(jack_nframes_t nframes);
+	void processMidiControlChange(unsigned char type, unsigned char value);
 	void processNoteOn(unsigned char key, unsigned char velocity,
 			NoteSource source);
 	void processNoteOff(unsigned char key, NoteSource source);

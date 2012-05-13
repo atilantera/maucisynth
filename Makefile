@@ -2,7 +2,10 @@ CC=g++
 LD=g++
 CFLAGS= -std=c++0x -Wall -Wextra -pedantic -march=athlon-xp -O2 -g -pg \
         `pkg-config --cflags gtk+-2.0` 
-LIBS=-ljack -lm `pkg-config --libs gtk+-2.0` -pg
+LIBS=-ljack -lm -pg `pkg-config --libs gtk+-2.0`
+OBJFILES=EventBuffer.o main.o LowFrequencyOscillator.o LowpassFilter.o \
+        MainOscillator.o Oscillator.o Synthesizer.o SynthGui.o SynthParameters.o
+EXECUTABLE=maucisynth
 RM=rm -f
 
 
@@ -10,11 +13,8 @@ RM=rm -f
 all: main
 	cd tests && make && cd ..
 	
-main: EventBuffer.o main.o LowFrequencyOscillator.o LowpassFilter.o \
-	MainOscillator.o Oscillator.o Synthesizer.o SynthGui.o SynthParameters.o
-	$(LD) $(LIBS) EventBuffer.o main.o LowFrequencyOscillator.o \
-	LowpassFilter.o MainOscillator.o Oscillator.o Synthesizer.o SynthGui.o \
-	SynthParameters.o -o maucisynth
+main: $(OBJFILES)
+	$(LD) -o $(EXECUTABLE) $(OBJFILES) $(LIBS)
 
 EventBuffer.o: EventBuffer.cpp EventBuffer.h tests/testing.h
 	$(CC) $(CFLAGS) -c EventBuffer.cpp
@@ -45,4 +45,4 @@ SynthParameters.o: SynthParameters.cpp SynthParameters.h
 
 clean:
 	$(RM) *.o
-	$(RM) ./main
+	$(RM) ./$(EXECUTABLE)

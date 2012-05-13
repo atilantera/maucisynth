@@ -1,7 +1,7 @@
 /*
  * MainOscillator.h
  *
- * Main oscillator produces signal that is part of the sound.
+ * Main oscillator produces sound of a single note.
  * Main oscillator can be modulated by a Low Frequency Oscillator (LFO).
  *
  * Note: MainOscillator calls LowFrequencyOscillator.setRelativeFrequency(),
@@ -21,10 +21,6 @@
 #include "tests/testing.h"
 
 #define USE_OPTIMIZATIONS 1
-
-const unsigned int ENVELOPE_TABLE_LENGTH = 1024;
-const unsigned int MUTE_LENGTH = 16;
-const unsigned int RETRIGGER_LENGTH = 64;
 
 enum EnvelopePhase { ATTACK, DECAY, SUSTAIN, RELEASE, OFF, FAST_MUTE,
     RETRIGGER };
