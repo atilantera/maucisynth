@@ -26,8 +26,15 @@ Synthesizer::Synthesizer(EventBuffer & b, SynthParameters & p):
 
 	oscillatorBuffer = NULL;
 	lfoBuffer = NULL;
+	for (i = 0; i < POLYPHONY; i++) {
+		oscillator1[i] = NULL;
+		lfo1[i] = NULL;
+	}
 
-	initJack();
+	if(initJack() == false) {
+		return;
+	}
+
 	Oscillator::setSamplerate(samplerate);
 	Oscillator::setBufferLength(bufferLength);
 	filter.setSamplerate(samplerate);
@@ -78,7 +85,8 @@ bool Synthesizer::isActive()
 }
 
 // Creates audio output and MIDI input ports into JACK
-void Synthesizer::initJack()
+// Returns: true if everything okay, false otherwise.
+bool Synthesizer::initJack()
 {
 	jack_options_t options = JackNoStartServer;
 	jack_status_t status;
@@ -103,7 +111,7 @@ void Synthesizer::initJack()
 				"JACK protocol versions.";
 		}
 		std::cout << std::endl;
-		return;
+		return false;
 	}
 	jack_set_process_callback (jackClient, Synthesizer::jackCallback, 0);
 	jack_set_sample_rate_callback(jackClient, Synthesizer::updateSamplerate,
@@ -120,6 +128,7 @@ void Synthesizer::initJack()
 	if (jackOutputPort == NULL) {
 		std::cout << "Problem in starting the synth: cannot register "
 			"the output port in JACK." << std::endl;
+		return false;
 	}
 
 	jackMidiInPort = jack_port_register(jackClient, "midi_in",
@@ -127,11 +136,13 @@ void Synthesizer::initJack()
 	if (jackMidiInPort == NULL) {
 		std::cout << "Problem in starting the synth: cannot register "
 			"the MIDI in port in JACK." << std::endl;
+		return false;
 	}
 
 	samplerate = jack_get_sample_rate(jackClient);
 	bufferLength = jack_get_buffer_size(jackClient);
 	midiInChannel = 0;
+	return true;
 }
 
 // Function that JACK calls when more sound data is needed.

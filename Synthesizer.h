@@ -72,7 +72,7 @@ private:
 	// Filters
 	LowpassFilter filter;
 
-	void initJack();
+	bool initJack();
 	static int jackCallback(jack_nframes_t nframes, void * arg);
 	static int updateSamplerate(jack_nframes_t nframes, void *arg);
 	static int updateBufferLength(jack_nframes_t nframes, void *arg);

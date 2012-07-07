@@ -1,66 +1,35 @@
 Tehtävää aika- ja riippuvuusjärjestyksessä:
 
-0. BUGI: Realtimena maucisynth vie jostain syystä lähes kaiken suoritinajan.
-   päädy SynthParameters-olioon asti.
+1. Kunnollinen MIDI-tuki:
+   MainOscillatoriin/Synthesizeriin pitää saada viivästytetty Note On ja
+   Note On (viivästys n samplea): vasta sen jälkeen envelope alkaa muuttua.
+   Tämä luultavasti saa tremolot (saman nuotin nopea toisto) toimimaan.
    
-   LFO:n alimmaksi taajuudeksi vielä alempi kuin 0,1 Hz.
+1.1 LowFrequencyOscillatoriin ja MainOscillatoriin:
+    renderöi puskurista samplet [a..b]. (sen sijaan, että koko puskurillinen).
+    Indeksit integereinä, ei pointtereina.
+    
+    Muuta, testaa ja käännä metodi kerrallaan:
 
-5. Lisää MIDI-tuki
-* MainOscillatoriin/Synthesizeriin pitää saada viivästytetty Note On ja
-  Note On (viivästys n samplea): vasta sen jälkeen envelope alkaa muuttua.
-  Tämä luultavasti saa tremolot (saman nuotin nopea toisto) toimimaan.
-
-  Lienee helppo tehdä: MainOscillatoriin kentät
-  bool envelopeChangeHappens
-  unsigned int envelopeChangeTime   (sampleja)
-  jotain newEnvelope
-  
-  applyEnvelope-metodiin ennen while (i < bufferLength) -silmukkaa
-  toinen samanlainen silmukka:
-  if (envelopeChangeHappens) {
-      while (i < envelopeChangeTime) {
-          generoi envelopet kuten normaalisti, switch-lause
-      }
-      envelopeChangeHappens = false;
-      envelopePhase = newEnvelope;
-  }
-
-  PAITSI ETTÄ oikeasti pitää pystyä tallentamaan n kpl note off/onia.
-  Mikä on n? Se riippuu puskurikoosta. Voi olettaa, että tremolo on enitään
-  64-osanuotteja jollain 240 bpm:llä.
-  240 4-osanuottia minuutissa = 4 4-osanuottia sekunnissa
-                              = 64 64-osanuottia sekunnissa
-  Yksi 64-osanuotti on tällöin 1/64 s = 0,0156 s.
-  
-  JACKin pisin puskurikoko lienee 4096 samplea.
-  Kun samplerate on 44100, niin maksimikoolla puskurin pituus on
-  Mitä suurempi samplerate, sitä lyhyempi puskurin pituus on ajassa, kun
-  puskurikoko on vakio (4096 samplea). 44100 Hz sampleratea voidaan pitää
-  alarajana.
-  
-  4096/44100 s = 0,093 s.                        
-  Montako 64-osanuottia 240 bpm:llä tähän mahtuu?
-  0,093 / 0,0156 = 6 (pyöristettynä ylöspäin).
-  Jokaisesta nuotista on note on ja note off, eli 12 tapahtumaa.
-  Voidaan vielä pyöristää ylöspäin 16:een.
-  Yhdelle tapahtumalle riittäisi OSKILLAATTORIN OMASSA TAPAHTUMAPUSKURISSA
-  16 bittiä (unsigned short int): alimmat 15 bittiä ilmaisevat tapahtuman
-  aikasijainnin nykyisessä samplepuskurissa (0..32767). Ylin 15. bitti
-  tulkitaan seuraavasti: jos se on 1, niin kyseessä on note on. Muuten kyseessä
-  on note off.  
-  
-  
-
-5.4 Säädettävä MIDI-kanava (1..16), jolla syna reagoi
-    * Tämä on jo olemassa: Synthesizer::midiInChannel.
-    Pitää vain tehdä lisäys GUIhin.
-5.5 Kanavan äänenvoimakkuus ja panorointi -kontrollerit
-5.6 Pitch bend?
-
-
-1. Assembler-jutskat eivät ihan vielä toimi. (tests/AsmFunctions.s)
-   
- 
+    1. LowFrequencyOscillator::generateSound
+    
+    2. MainOscillator::synthesize*
+    
+    3. MainOscillator::apply*
+    
+    Jotain osviittaa saat tiedostoista
+      muutokset/MainOscillator.cpp
+      muutokset/MainOscillator.h
+      muutokset/LowFrequencyOscillator.cpp
+      muutokset/LowFrequencyOscillator.h
+         
+1.2 Synthesizeriin tremolotunnistin: kunkin puskurillisen aikana:
+    * laske, kuinka monta minkäkin sävelkorkeuden nuottia tullut
+    * niille sävelkorkeuksille, joille nuotteja on enemmän kuin yksi, tehdään
+      erikoiskäsittely
+    * muille peruskäsittely
+    * jos tulee uusi nuotti eikä vapaita oskillaattoriryhmiä ole, nuotti
+      hylätään.    
 
 2. luokka LowpassFilter
    * Lisää vielä rätisemätön rajataajuuden muutos.
@@ -71,14 +40,24 @@ Tehtävää aika- ja riippuvuusjärjestyksessä:
    ylempien taajuuksien laskostumista ei pitäisi tapahtua (eihän kohinaakaan
    kuulu), mutta sinc-funktio konvoluution perustana olisi silti parempi.
 
-3. Mitä tehdä, kun tulee note on, ja kaikki oskillaattorit ovat varattu?
-   Jos ruvetaan korvaamaan vanhoja nuotteja uusilla, niin MIDIn note
-   offit voivat mennä sekaisin, jos niistä ei pidä kirjaa.
 
-4. Lisää main volume -säädin GUIhin. Kohde: SynthParameters.mainVolume.
+4. Lisää main volume -säädin GUIhin. Kohde: SynthParameters.mainVolume.  
 
+5.4 Säädettävä MIDI-kanava (1..16), jolla syna reagoi
+    * Tämä on jo olemassa: Synthesizer::midiInChannel.
+    Pitää vain tehdä lisäys GUIhin.
+    
+5.5 Kanavan äänenvoimakkuus ja panorointi -kontrollerit
 
-   
+5.6 Pitch bend?
+
+Pidemmällä tähtäimellä:
+* normaalijakaumasatunnaisuus
+* kolme oskillaattoria + kolme LFO:ta per nuotti
+  * oskillaattorien vi
+* jännempi suodatin (miten olisi konvoluutio sinc-funktiolla?)
+* modulaatio-inputti JACKin kautta (esim. suodatettu puhe moduloisi
+  oskillaattoreita) 
 
 
 

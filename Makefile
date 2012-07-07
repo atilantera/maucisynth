@@ -11,7 +11,6 @@ RM=rm -f
 
 
 all: main
-	cd tests && make && cd ..
 	
 main: $(OBJFILES)
 	$(LD) -o $(EXECUTABLE) $(OBJFILES) $(LIBS)

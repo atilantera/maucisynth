@@ -1,0 +1,115 @@
+Introduction to maucisynth (for developers)
+-------------------------------------------
+
+Here is a short top-down walkthrough of the classes and source code files of
+maucisynth.
+
+main.cpp:
+
+Obviously, here the program starts.
+main() creates a SynthGui object which starts the graphical user interface
+using the GTK+ library. Then main() creates a Synthesizer object, which is
+the sound engine.
+
+There are one thread and one callback:
+1. The GUI event thread which is the initial thread. (main() calls gtk_main()
+   after SynthGui object has been created and initialized successfully.)
+
+2. JACK server calls Synthesizer::jackCallback() when more audio is needed.
+
+
+EvenBuffer.cpp/.h
+SynthGui.cpp/.h: 
+SynthParameters.cpp/.h
+
+SynthGui is the graphical user interface (GUI).
+The user can change the sound parameters of the synthesizer with it and
+also play test notes by computer keyboard. SynthGui sends data (sound
+parameter changes and notes from computer keyboard) to the Synthesizer object
+by two ways: either through EventBuffer object or altering values in a
+SynthParameters object.
+    The EventBuffer interface is older. It is used to send test notes from GUI
+to Synthesizer. An EventBuffer has two internal byte buffers: GUI writes to
+buffer A and Synthesizer reads from buffer B. Then the buffers are swapped
+(a mutex is used with this procedure.)
+    The SynthParameters is an object that is shared by both the SynthGui and
+the Synthesizer objects. This interface does not need concurrency checking,
+because:
+a) SynthGui only writes to the SynthParameters
+b) Synthesizer only reads the SynthParameters
+c) SynthParameters (and OscillatorParameters) only contain atomic data types.
+   Therefore it is guaranteed that when SynthGui writes a field of
+   SynthParameters, the whole field is written before Synthesizer reads it.
+d) Fields of SynthParameters can be changed independently.
+The SynthParameters interface needs less CPU time because there is no buffers
+or mutex. Slider widget changes typically creates peaks into CPU usage because
+the values are updated continuously (10-20 times per second) when the slider
+changes. This feature is needed for the realtime feel of the GUI controls.
+Although some of the CPU usage when turning sliders is caused by the GTK+
+or X11 libraries itself, the CPU usage is still reduced with the SynthParameters
+implementation. (Before SynthParameters the EventBuffer interface was used also
+for the synthesizer parameter changes.)
+
+
+Synthesizer.cpp/.h
+
+The main class of the synthesizer engine. The Synthesizer object receives
+parameter changes and notes from GUI and MIDI notes from JACK. Then the
+Synthesizer creates sound according to note and parameter data, and sends
+the rendered sound the JACK.
+    The synthesizer engine does not have its own thread, but like mentioned,
+the JACK sound server calls Synthesizer::jackCallback() when more audio is
+needed. This is typically between some milliseconds depending on the JACK
+settings.
+    What happens inside the Synthesizer is that the Synthesizer only
+coordinates the sound production: first it reads new data from EventBuffer and
+JACK MIDI interface. Then it assigns musical notes to oscillators (classes
+LowFrequencyOscillator, MainOscillator, Oscillator), which render the actual
+sound. Finally the sound of all oscillators is mixed, filtered by a
+LowpassFilter object, and then sent to JACK. Then the function
+Synthesizer::jackCallback() ends until JACK needs next chunk of audio data.
+ 
+
+LowFrequencyOscillator.h
+MainOscillator.cpp/.h
+Oscillator.cpp/.h
+
+An oscillator is an object that produces a basic waveform at constant (or
+nearly constant) frequency. Basic waveforms are sine wave, triangle wave,
+sawtooth wave, pulse wave and a rectified sine wave ("abs-sine" wave).
+    Oscillator is the parent class from both LowFrequencyOscillator and
+MainOscillator, which are two different types of oscillators.
+    MainOscillator objects render the actual sound that will be mixed together
+and sent to the JACK output. Each MainOscillator has a state: it is either
+off or playing some note. There can be more than one MainOscillator and
+LowFrequencyOscillator that together generate sound of one note.
+    LowFrequencyOscillator (LFO) is an oscillator that produces sine waves at
+constant frequency. The signal from a LowFrequencyOscillator modulates signal
+of a MainOscillator (if the modulation option is turned on from the GUI).
+For example, with frequency modulation, the LFO makes the pitch of the
+MainOscillator go slightly up and down.
+
+
+LowpassFilter.cpp/.h
+
+The mixed sound of all playing oscillators is sent through a filter which
+alters the sound. Currently there is only a simple lowpass filter: it reduces
+the high frequency oscillations in the sound, making it "softer" or "darker".
+
+
+NormalRandom.cpp/.h
+
+This is a pseudorandom number generator. It is based on the rand() function
+of the C standard library (defined in <cstdlib> or stdlib.h). The standard
+rand() only produces integers from the uniform distribution. This class
+gives floating point values from the normal distribution.
+    We need randomness to make the synthesizer sound more "fat" and "natural":
+every time when a new note is played, its initial frequency has a little
+random variation. Because of this, the interference in the mixed sound of
+all oscillators varies from note to note even if there is a repeating note
+pattern. Both real, acoustic instruments, like guitars, and analog synthesizers,
+like the Minimoog, have this phenomenon by nature. (With a guitar, it depends
+at least on the human player. With an analog synthesizer, it depends on the
+slight voltage changes, when the voltage controls the pitch of an oscillator.)
+Moreover, this randomness follows the normal probability distribution.
+    

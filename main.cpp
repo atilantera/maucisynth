@@ -15,6 +15,9 @@ int main(int argc, char ** argv)
 	if (synth.isActive()) {
 		gtk_main();
 	}
+	else {
+		return 1;
+	}
 
 	return 0;
 }

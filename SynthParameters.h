@@ -59,7 +59,7 @@ enum NoteSource { computerKeyboard = 1, jackMidi = 2};
 const unsigned int maxVelocity = 127;
 const unsigned int maxSamplerate = 128000;
 
-const float MinFixedLfoFrequency = 0.1;
+const float MinFixedLfoFrequency = 0.01;
 const float MaxFixedLfoFrequency = 50;
 
 const float MinRelativeLfoFrequency = 0.01;
@@ -73,16 +73,16 @@ const unsigned int MinLowpassFrequency = 100;
 const unsigned int MaxLowpassFrequency = 20000;
 
 // ADSR times are in milliseconds.
-const unsigned int MinAttackTime = 5;
+const unsigned int MinAttackTime = 1;
 const unsigned int MaxAttackTime = 1000;
 
-const unsigned int MinDecayTime  = 5;
+const unsigned int MinDecayTime  = 1;
 const unsigned int MaxDecayTime  = 1000;
 
 const unsigned int MinSustainVolume = 1;
 const unsigned int MaxSustainVolume = 100;
 
-const unsigned int MinReleaseTime   = 5;
+const unsigned int MinReleaseTime   = 1;
 const unsigned int MaxReleaseTime   = 3000;
 
 // Class OscillatorParameters has parameters of one MainOscillator-
