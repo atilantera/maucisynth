@@ -208,7 +208,7 @@ void Synthesizer::generateSound(jack_nframes_t nframes)
 	}
 
 	if (useGlobalLfo) {
-		lfo1[0]->generateSound(lfoBuffer);
+		lfo1[0]->generateSound(lfoBuffer, 0, bufferLength);
 	}
 
 	unsigned int oscNum, i;
@@ -216,10 +216,10 @@ void Synthesizer::generateSound(jack_nframes_t nframes)
 	for (oscNum = 0; oscNum < POLYPHONY; oscNum++) {
 		if (oscillator1[oscNum]->getEnvelopePhase() != OFF) {
 			if (useDedicatedLfo) {
-				lfo1[oscNum]->generateSound(lfoBuffer);
+				lfo1[oscNum]->generateSound(lfoBuffer, 0, bufferLength);
 			}
 			oscillator1[oscNum]->generateSound(oscillatorBuffer, lfoBuffer,
-				noteFinished);
+				0, bufferLength, noteFinished);
 			for (i = 0; i < nframes; i++) {
 				outputBuffer[i] += oscillatorBuffer[i];
 			}

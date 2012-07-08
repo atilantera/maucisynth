@@ -8,20 +8,7 @@ Tehtävää aika- ja riippuvuusjärjestyksessä:
 1.1 LowFrequencyOscillatoriin ja MainOscillatoriin:
     renderöi puskurista samplet [a..b]. (sen sijaan, että koko puskurillinen).
     Indeksit integereinä, ei pointtereina.
-    
-    Muuta, testaa ja käännä metodi kerrallaan:
-
-    1. LowFrequencyOscillator::generateSound
-    
-    2. MainOscillator::synthesize*
-    
-    3. MainOscillator::apply*
-    
-    Jotain osviittaa saat tiedostoista
-      muutokset/MainOscillator.cpp
-      muutokset/MainOscillator.h
-      muutokset/LowFrequencyOscillator.cpp
-      muutokset/LowFrequencyOscillator.h
+    (TÄMÄ ON JO TEHTY.)
          
 1.2 Synthesizeriin tremolotunnistin: kunkin puskurillisen aikana:
     * laske, kuinka monta minkäkin sävelkorkeuden nuottia tullut
@@ -30,6 +17,9 @@ Tehtävää aika- ja riippuvuusjärjestyksessä:
     * muille peruskäsittely
     * jos tulee uusi nuotti eikä vapaita oskillaattoriryhmiä ole, nuotti
       hylätään.    
+
+1.3 GDB:llä ajaessa näkyy neljä säiettä. Tutki, mikä säie on mikin, ja
+    päivitä doc/developer_introduction.txt.
 
 2. luokka LowpassFilter
    * Lisää vielä rätisemätön rajataajuuden muutos.
@@ -57,7 +47,7 @@ Pidemmällä tähtäimellä:
   * oskillaattorien vi
 * jännempi suodatin (miten olisi konvoluutio sinc-funktiolla?)
 * modulaatio-inputti JACKin kautta (esim. suodatettu puhe moduloisi
-  oskillaattoreita) 
+  oskillaattoreita)
 
 
 

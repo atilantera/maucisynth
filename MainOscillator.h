@@ -36,7 +36,7 @@ public:
 	void muteFast();
 
 	void generateSound(float outputBuffer[], const float modulatorBuffer[],
-		bool & noteFinished);
+		unsigned int rangeStart, unsigned int rangeEnd, bool & noteFinished);
 
 	EnvelopePhase getEnvelopePhase() const;
 
@@ -98,34 +98,50 @@ protected:
 	// if the note of the oscillator ends in Attack or Decay phases,
 	// the current peak amplitude is not sustain * peakAmplitude.
 	// Going directly from attack/decay to release results in audible crack.
-	float lastSample;
+	float lastSampleValue;
 
 	void setFrequency(float f);
 
 	void synthesizeFromWavetable(float outputBuffer[],
-		const float modulatorBuffer[]);
+		const float modulatorBuffer[], unsigned int rangeStart,
+		unsigned int rangeEnd);
 
 	void synthesizeTriangleWave(float outputBuffer[],
-		const float modulatorBuffer[]);
+		const float modulatorBuffer[], unsigned int rangeStart,
+		unsigned int rangeEnd);
 
 	void synthesizeSawtoothWave(float outputBuffer[],
-		const float modulatorBuffer[]);
+		const float modulatorBuffer[], unsigned int rangeStart,
+		unsigned int rangeEnd);
 
 	void synthesizePulseWave(float outputBuffer[],
-		const float modulatorBuffer[]);
+		const float modulatorBuffer[], unsigned int rangeStart,
+		unsigned int rangeEnd);
 
 	void applyAmplitudeModulation(float outputBuffer[],
-		const float modulatorBuffer[]);
+		const float modulatorBuffer[], unsigned int rangeStart,
+		unsigned int rangeEnd);
 
 	static void initializeEnvelopeTables();
 
-	void applyEnvelope(float outputBuffer[]);
+	void applyEnvelope(float outputBuffer[], unsigned int rangeStart,
+		unsigned int rangeEnd);
 
-	unsigned int applyAttack(float outputBuffer[], unsigned int i);
-    unsigned int applyRetrigger(float outputBuffer[]);
-	unsigned int applyDecay(float outputBuffer[], unsigned int i);
-	unsigned int applySustain(float outputBuffer[], unsigned int i);
-	unsigned int applyRelease(float outputBuffer[], unsigned int i);
+	unsigned int applyAttack(float outputBuffer[], unsigned int rangeStart,
+		unsigned int rangeEnd);
+
+    unsigned int applyRetrigger(float outputBuffer[], unsigned int rangeStart,
+    	unsigned int rangeEnd);
+
+	unsigned int applyDecay(float outputBuffer[], unsigned int rangeStart,
+		unsigned int rangeEnd);
+
+	unsigned int applySustain(float outputBuffer[], unsigned int rangeStart,
+		unsigned int rangeEnd);
+
+	unsigned int applyRelease(float outputBuffer[], unsigned int rangeStart,
+		unsigned int rangeEnd);
+
 	void applyFastMute(float outputBuffer[]);
 };
 

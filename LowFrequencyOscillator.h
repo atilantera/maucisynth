@@ -19,7 +19,8 @@ public:
 
 	void setRelativeOscillator(MainOscillator * osc);
 	void updateRelativeFrequency(float mainOscFrequency);
-	void generateSound(float buffer[]);
+	void generateSound(float buffer[], unsigned int rangeStart,
+			unsigned int rangeEnd);
 
 private:
 	OscillatorParameters & globalParameters;

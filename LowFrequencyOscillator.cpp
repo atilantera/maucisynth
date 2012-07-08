@@ -21,7 +21,12 @@ void LowFrequencyOscillator::updateRelativeFrequency(float mainOscFrequency)
 	setFrequency(globalParameters.lfoRelativeFrequency * mainOscFrequency);
 }
 
-void LowFrequencyOscillator::generateSound(float buffer[])
+// Generates oscillation.
+// buffer - output buffer for sound / oscillation
+// rangeStart - index of first sample in the buffer to generate
+// rangeEnd - index of last sample + 1
+void LowFrequencyOscillator::generateSound(float buffer[],
+unsigned int rangeStart, unsigned int rangeEnd)
 {
 	refreshParameters();
 
@@ -31,19 +36,25 @@ void LowFrequencyOscillator::generateSound(float buffer[])
     // where the wave sounds the same, and therefore we need to split
     // the frequency.
 
-	float increase = anglePerSample;
+	float tableLength = WAVE_TABLE_LENGTH;
+	float index = angle * tableLength;
+	float increase = anglePerSample * tableLength;
+
     if (globalParameters.lfoModulationTarget == PULSE_WIDTH) {
     	increase *= 0.5;
     }
 
-    for (unsigned int i = 0; i < bufferLength; i++) {
-		// (int)(x + 0.5) is faster than calling lroundf()
-		buffer[i] = sineTable[(int)(angle * WAVE_TABLE_LENGTH + 0.5)];
-		angle += increase;
-		if (angle >= 1) {
-			angle -= 1;
+    float * endPtr = buffer + rangeEnd;
+    buffer += rangeStart;
+    while (buffer < endPtr) {
+		// (int)(x + 0.5) may be even three times faster than calling lroundf()
+		*buffer++ = sineTable[(int)index];
+		index += increase;
+		if (index >= tableLength) {
+			index -= tableLength;
 		}
 	}
+    angle = index / tableLength;
 }
 
 void LowFrequencyOscillator::refreshParameters()

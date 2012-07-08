@@ -17,7 +17,7 @@ const float STEEPNESS = 4;
 
 const unsigned int ENVELOPE_TABLE_LENGTH = 1024;
 const unsigned int MUTE_LENGTH = 16;
-const unsigned int RETRIGGER_LENGTH = 64;
+const unsigned int RETRIGGER_LENGTH = 16;
 
 MainOscillator::MainOscillator(OscillatorParameters & p) :
 	globalParameters(p)
@@ -35,7 +35,7 @@ MainOscillator::MainOscillator(OscillatorParameters & p) :
 	peakAmplitude = 0;
 	envelopePhaseTime = 0;
 	pulseWidth = 0.5;
-	lastSample = 0;
+	lastSampleValue = 0;
 }
 
 MainOscillator::~MainOscillator() {
@@ -61,7 +61,7 @@ void MainOscillator::noteOn(unsigned char noteKey, unsigned char noteVelocity,
     }
     else {
         envelopePhase = ATTACK;
-        lastSample = 0;
+        lastSampleValue = 0;
         angle = 0;
     }
 
@@ -89,11 +89,13 @@ void MainOscillator::muteFast()
 // Generates a sound of an oscillator.
 // outputBuffer = buffer for sound output
 // modulatorBuffer = sound of a low frequency oscillator
-// bufferLength = length of outbutBuffer and modulatorBuffer in samples
+// rangeStart - index of first sample in the buffer to generate
+// rangeEnd - index of last sample + 1
 // noteFinished is changed to true if oscillator finished its envelope curve
 // (phase RELEASE ended).
 void MainOscillator::generateSound(float outputBuffer[],
-const float modulatorBuffer[], bool & noteFinished)
+const float modulatorBuffer[], unsigned int rangeStart,
+unsigned int rangeEnd, bool & noteFinished)
 {
 	if (envelopePhase == FAST_MUTE) {
 		applyFastMute(outputBuffer);
@@ -104,32 +106,38 @@ const float modulatorBuffer[], bool & noteFinished)
 	switch (globalParameters.waveform) {
 	case SINE:
 		wavetable = Oscillator::sineTable;
-		synthesizeFromWavetable(outputBuffer, modulatorBuffer);
+		synthesizeFromWavetable(outputBuffer, modulatorBuffer, rangeStart,
+			rangeEnd);
 		break;
 
 	case TRIANGLE:
-		synthesizeTriangleWave(outputBuffer, modulatorBuffer);
+		synthesizeTriangleWave(outputBuffer, modulatorBuffer, rangeStart,
+			rangeEnd);
 		break;
 
 	case ABS_SINE:
 		wavetable = Oscillator::absSineTable;
-		synthesizeFromWavetable(outputBuffer, modulatorBuffer);
+		synthesizeFromWavetable(outputBuffer, modulatorBuffer, rangeStart,
+			rangeEnd);
 		break;
 
 	case SAWTOOTH:
-		synthesizeSawtoothWave(outputBuffer, modulatorBuffer);
+		synthesizeSawtoothWave(outputBuffer, modulatorBuffer, rangeStart,
+			rangeEnd);
 		break;
 
 	case PULSE:
-		synthesizePulseWave(outputBuffer, modulatorBuffer);
+		synthesizePulseWave(outputBuffer, modulatorBuffer, rangeStart,
+			rangeEnd);
 		break;
 	}
 
 	if (globalParameters.lfoModulationTarget == AMPLITUDE) {
-		applyAmplitudeModulation(outputBuffer, modulatorBuffer);
+		applyAmplitudeModulation(outputBuffer, modulatorBuffer, rangeStart,
+			rangeEnd);
 	}
 
-	applyEnvelope(outputBuffer);
+	applyEnvelope(outputBuffer, rangeStart, rangeEnd);
 
 	noteFinished = (envelopePhase == OFF);
 }
@@ -141,43 +149,54 @@ void MainOscillator::setFrequency(float f)
 	sawtoothAnglePerSample = anglePerSample;
 }
 
+// Synthesizes oscillation. Waveform is sine wave or rectified sine wave,
+// waveform source is wavetable.
+// outputBuffer - sample buffer for sound output
+// modulatorBuffer - sample buffer for modulating signal (input)
+// rangeStart - index of first sample in outputBuffer and modulatorBuffer
+//              to process
+// rangeEnd   - index of last sample in outputBuffer and modulatorBuffer
+//              to process + 1
 void MainOscillator::synthesizeFromWavetable(float outputBuffer[],
-const float modulatorBuffer[])
+const float modulatorBuffer[], unsigned int rangeStart,
+unsigned int rangeEnd)
 {
 #if USE_OPTIMIZATIONS
-	float * endPtr = outputBuffer + bufferLength;
+	float * endPtr = outputBuffer + rangeEnd;
+	outputBuffer += rangeStart;
 	float tableLength = WAVE_TABLE_LENGTH;
-	float index = angle * tableLength;
+	float wavetableIndex = angle * tableLength;
 	float indexIncrease = anglePerSample * tableLength;
 
 	if (globalParameters.lfoModulationTarget == FREQUENCY) {
 		float modAmount = globalParameters.lfoModulationAmount;
 		while (outputBuffer < endPtr) {
-			if (index >= tableLength) {
-				index -= tableLength;
+			if (wavetableIndex >= tableLength) {
+				wavetableIndex -= tableLength;
 			}
 
-			*outputBuffer++ = wavetable[(int)index];
-			index += indexIncrease * (1 + modAmount * (*modulatorBuffer++));
+			*outputBuffer++ = wavetable[(int)wavetableIndex];
+			wavetableIndex += indexIncrease *
+					          (1 + modAmount * (*modulatorBuffer++));
 		}
-		angle = index / tableLength;
+		angle = wavetableIndex / tableLength;
 	}
 	else {
 		while (outputBuffer < endPtr) {
-			if (index >= tableLength) {
-				index -= tableLength;
+			if (wavetableIndex >= tableLength) {
+				wavetableIndex -= tableLength;
 			}
-			*outputBuffer = wavetable[(int)index];
+			*outputBuffer = wavetable[(int)wavetableIndex];
 			outputBuffer++;
-			index += indexIncrease;
+			wavetableIndex += indexIncrease;
 		}
-		angle = index / tableLength;
+		angle = wavetableIndex / tableLength;
 	}
 #else
 
 	unsigned int i;
 	if (globalParameters.lfoModulationTarget == FREQUENCY) {
-		for (i = 0; i < bufferLength; i++) {
+		for (i = rangeStart; i < rangeEnd; i++) {
 			outputBuffer[i] = wavetable[(int)(angle * WAVE_TABLE_LENGTH)];
 			angle += anglePerSample * (1 + globalParameters.lfoModulationAmount
 				* modulatorBuffer[i]);
@@ -188,7 +207,7 @@ const float modulatorBuffer[])
 	}
 	else {
 		unsigned int index;
-		for (i = 0; i < bufferLength; i++) {
+		for (i = rangeStart; i < rangeEnd; i++) {
 			index = angle * WAVE_TABLE_LENGTH;
 			outputBuffer[i] = wavetable[(int)index];
 			angle += anglePerSample;
@@ -201,12 +220,20 @@ const float modulatorBuffer[])
 #endif // USE_OPTIMIZATIONS
 }
 
+// Synthesizes triangle wave.
+// outputBuffer - sample buffer for sound output
+// modulatorBuffer - sample buffer for modulating signal (input)
+// rangeStart - index of first sample in outputBuffer and modulatorBuffer
+//              to process
+// rangeEnd   - index of last sample in outputBuffer and modulatorBuffer
+//              to process + 1
 void MainOscillator::synthesizeTriangleWave(float outputBuffer[],
-	const float modulatorBuffer[])
+const float modulatorBuffer[], unsigned int rangeStart,
+unsigned int rangeEnd)
 {
 	unsigned int i;
 	if (globalParameters.lfoModulationTarget == FREQUENCY) {
-		for (i = 0; i < bufferLength; i++) {
+		for (i = rangeStart; i < rangeEnd; i++) {
 			if (angle < 0.25) {
 				outputBuffer[i] = 4 * angle;
 			}
@@ -228,7 +255,7 @@ void MainOscillator::synthesizeTriangleWave(float outputBuffer[],
 		}
 	}
 	else {
-		for (i = 0; i < bufferLength; i++) {
+		for (i = rangeStart; i < rangeEnd; i++) {
 			if (angle < 0.25) {
 				outputBuffer[i] = 4 * angle;
 			}
@@ -248,13 +275,21 @@ void MainOscillator::synthesizeTriangleWave(float outputBuffer[],
 	}
 }
 
+// Synthesizes sawtooth wave.
+// outputBuffer - sample buffer for sound output
+// modulatorBuffer - sample buffer for modulating signal (input)
+// rangeStart - index of first sample in outputBuffer and modulatorBuffer
+//              to process
+// rangeEnd   - index of last sample in outputBuffer and modulatorBuffer
+//              to process + 1
 void MainOscillator::synthesizeSawtoothWave(float outputBuffer[],
-const float modulatorBuffer[])
+const float modulatorBuffer[], unsigned int rangeStart,
+unsigned int rangeEnd)
 {
 	unsigned int i;
 
 	if (globalParameters.lfoModulationTarget == FREQUENCY) {
-		for (i = 0; i < bufferLength; i++) {
+		for (i = rangeStart; i < rangeEnd; i++) {
 			outputBuffer[i] = angle * 2 - 1;
 			angle += sawtoothAnglePerSample;
 			if (angle >= 1) {
@@ -266,7 +301,8 @@ const float modulatorBuffer[])
 	}
 	else {
 #if USE_OPTIMIZATIONS
-		float * endPtr = outputBuffer + bufferLength;
+		float * endPtr = outputBuffer + rangeEnd;
+		outputBuffer += rangeStart;
 		float sawtoothAngle = angle * 2 - 1;
 		float sawtoothIncrease = anglePerSample * 2;
 		while (outputBuffer < endPtr) {
@@ -278,7 +314,7 @@ const float modulatorBuffer[])
 		}
 		angle = (sawtoothAngle + 1) * 0.5;
 #else
-		for (i = 0; i < bufferLength; i++) {
+		for (i = rangeStart; i < rangeEnd; i++) {
 			outputBuffer[i] = angle * 2 - 1;
 			angle += anglePerSample;
 			if (angle >= 1) {
@@ -290,13 +326,21 @@ const float modulatorBuffer[])
 
 }
 
+// Synthesizes square/pulse wave.
+// outputBuffer - sample buffer for sound output
+// modulatorBuffer - sample buffer for modulating signal (input)
+// rangeStart - index of first sample in outputBuffer and modulatorBuffer
+//              to process
+// rangeEnd   - index of last sample in outputBuffer and modulatorBuffer
+//              to process + 1
 void MainOscillator::synthesizePulseWave(float outputBuffer[],
-const float modulatorBuffer[])
+const float modulatorBuffer[], unsigned int rangeStart,
+unsigned int rangeEnd)
 {
 	unsigned int i;
 
 	if (globalParameters.lfoModulationTarget == PULSE_WIDTH) {
-		for (i = 0; i < bufferLength; i++) {
+		for (i = rangeStart; i < rangeEnd; i++) {
 			if (angle < pulseWidth) {
 				outputBuffer[i] = 1;
 			}
@@ -313,7 +357,7 @@ const float modulatorBuffer[])
 		}
 	}
 	else if (globalParameters.lfoModulationTarget == FREQUENCY) {
-		for (i = 0; i < bufferLength; i++) {
+		for (i = rangeStart; i < rangeEnd; i++) {
 			if (angle < 0.5) {
 				outputBuffer[i] = 1;
 			}
@@ -328,7 +372,7 @@ const float modulatorBuffer[])
 		}
 	}
 	else {
-		for (i = 0; i < bufferLength; i++) {
+		for (i = rangeStart; i < rangeEnd; i++) {
 			if (angle < 0.5) {
 				outputBuffer[i] = 1;
 			}
@@ -343,43 +387,55 @@ const float modulatorBuffer[])
 	}
 }
 
+// Applies amplitude modulation to synthesized sound.
+// outputBuffer - sample buffer for sound output
+// modulatorBuffer - sample buffer for modulating signal (input)
+// rangeStart - index of first sample in outputBuffer and modulatorBuffer
+//              to process
+// rangeEnd   - index of last sample in outputBuffer and modulatorBuffer
+//              to process + 1
 void MainOscillator::applyAmplitudeModulation(float outputBuffer[],
-const float modulatorBuffer[])
+const float modulatorBuffer[], unsigned int rangeStart,
+unsigned int rangeEnd)
 {
 	float lfoAmount = globalParameters.lfoModulationAmount * 0.5;
     float lfoMidpoint = 1 - lfoAmount;
 
-    for (unsigned int i = 0; i < bufferLength; i++) {
+    for (unsigned int i = rangeStart; i < rangeEnd; i++) {
        outputBuffer[i] *= lfoMidpoint + lfoAmount * modulatorBuffer[i];
     }
 }
 
-// Applies amplitude envelope curve to all sound samples in outputBuffer.
-void MainOscillator::applyEnvelope(float outputBuffer[])
+// Applies amplitude envelope curve to synthesized sound.
+// outputBuffer - sample buffer for sound input/output
+// rangeStart - index of first sample in outputBuffer to process
+// rangeEnd   - index of last sample in outputBuffer to process + 1
+void MainOscillator::applyEnvelope(float outputBuffer[],
+unsigned int rangeStart, unsigned int rangeEnd)
 {
-	unsigned int i = 0;
+	unsigned int i = rangeStart;
 
-    while (i < bufferLength) {
+    while (i < rangeEnd) {
 		switch (envelopePhase) {
 
 		case ATTACK:
-			i = applyAttack(outputBuffer, i);
+			i = applyAttack(outputBuffer, i, rangeEnd);
 			break;
 
 		case DECAY:
-			i = applyDecay(outputBuffer, i);
+			i = applyDecay(outputBuffer, i, rangeEnd);
 			break;
 
 		case SUSTAIN:
-			i = applySustain(outputBuffer, i);
+			i = applySustain(outputBuffer, i, rangeEnd);
 			break;
 
 		case RELEASE:
-			i = applyRelease(outputBuffer, i);
+			i = applyRelease(outputBuffer, i, rangeEnd);
 			break;
 
         case RETRIGGER:
-            i = applyRetrigger(outputBuffer);
+            i = applyRetrigger(outputBuffer, i, rangeEnd);
             break;
 
 		case FAST_MUTE:
@@ -394,33 +450,36 @@ void MainOscillator::applyEnvelope(float outputBuffer[])
 
 		}
 	}
-	lastSample = outputBuffer[bufferLength - 1];
+	lastSampleValue = outputBuffer[rangeEnd - 1];
 }
 
 // Applies envelope phase ATTACK to samples of outputBuffer.
-// i = index of first sample in outputBuffer where the ATTACK curve is
-//     applied to.
-// Returns index of next sample to be processed in outputBuffer.
-unsigned int MainOscillator::applyAttack(float outputBuffer[], unsigned int i)
+// rangeStart - index of first sample in outputBuffer to process
+// rangeEnd   - index of last sample in outputBuffer to process + 1
+// When the envelope phase ends, less than rangeEnd - rangeStart samples
+// may have been processed.
+//     Returns index of next sample to be processed in outputBuffer.
+unsigned int MainOscillator::applyAttack(float outputBuffer[],
+	unsigned int rangeStart, unsigned int rangeEnd)
 {
-#if USE_OPTIMIZATIONS
 	// Optimized version.
 	// See doc/expcurves.txt for explanation of the optimization.
 	unsigned int samplesLeftInPhase = attackTime - envelopePhaseTime;
-	unsigned int samplesLeftInBuffer = bufferLength - i;
+	unsigned int rangeLength = rangeEnd - rangeStart;
 	float t = -STEEPNESS * envelopePhaseTime / attackTime;
 	float tIncrease = -STEEPNESS / (attackTime - 1);
 	float b = peakAmplitude / (1 - expf(-STEEPNESS));
 
-	if (samplesLeftInPhase > bufferLength - i) {
-		for (; i < bufferLength; i++) {
+	unsigned int i = rangeStart;
+	if (samplesLeftInPhase > rangeLength) {
+		for (; i < rangeEnd; i++) {
 			outputBuffer[i] *= b * (1 - expf(t));
 			t += tIncrease;
 		}
-		envelopePhaseTime += samplesLeftInBuffer;
+		envelopePhaseTime += rangeLength;
 	}
 	else {
-		unsigned int endI = i + samplesLeftInPhase;
+		unsigned int endI = rangeStart + samplesLeftInPhase;
 		for (; i < endI; i++) {
 			outputBuffer[i] *= b * (1 - expf(t));
 			t += tIncrease;
@@ -431,71 +490,57 @@ unsigned int MainOscillator::applyAttack(float outputBuffer[], unsigned int i)
 	envelopeAmplitude = b * (1 - expf(t - tIncrease));
 	previousEnvelopePhase = ATTACK;
 	return i;
-
-#else
-	// Original version
-	unsigned int samplesLeft = attackTime - envelopePhaseTime;
-	float relativeTime = (float)envelopePhaseTime / attackTime;
-	float timeIncrease = 1.0 / (attackTime - 1);
-	float b = peakAmplitude / (1 - expf(-STEEPNESS));
-	float amplitude = 0;
-
-	if (samplesLeft > bufferLength) {
-		envelopePhaseTime += bufferLength - i;
-		for (; i < bufferLength; i++) {
-			amplitude = b * (1 - expf(-STEEPNESS * relativeTime));
-			outputBuffer[i] *= amplitude;
-			relativeTime += timeIncrease;
-		}
-
-	}
-	else {
-		unsigned int endI = i + samplesLeft;
-		for (; i < endI; i++) {
-			amplitude = b * (1 - expf(-STEEPNESS * relativeTime));
-			outputBuffer[i] *= amplitude;
-			relativeTime += timeIncrease;
-		}
-		envelopePhase = DECAY;
-		envelopePhaseTime = 0;
-	}
-	envelopeAmplitude = amplitude;
-	previousEnvelopePhase = ATTACK;
-	return i;
-#endif // USE_OPTIMIZATIONS
 }
 
 // Retriggers the note in means of envelope curve. The retrigger curve is
-// linear transition from last envelope curve value to zero in
+// smooth transition from last envelope curve value to zero in
 // RETRIGGER_LENGTH samples. Then the envelope is switched to the beginning of
 // ATTACK phase.
-// Returns index of next sample to be processed in outputBuffer.
-unsigned int MainOscillator::applyRetrigger(float outputBuffer[])
+// rangeStart - index of first sample in outputBuffer to process
+// rangeEnd   - index of last sample in outputBuffer to process + 1
+// When the envelope phase ends, less than rangeEnd - rangeStart samples
+// may have been processed.
+//     Returns index of next sample to be processed in outputBuffer.
+unsigned int MainOscillator::applyRetrigger(float outputBuffer[],
+	unsigned int rangeStart, unsigned int rangeEnd)
 {
+	unsigned int samplesLeftInPhase = RETRIGGER_LENGTH - envelopePhaseTime;
+	unsigned int rangeLength = rangeEnd - rangeStart;
 	unsigned int i;
-	float angle = 0.5 * M_PI;
+	float angle = (0.5 + (float)envelopePhaseTime / RETRIGGER_LENGTH) * M_PI;
 	float angleIncrease = M_PI / RETRIGGER_LENGTH;
-	for (i = 0; i < RETRIGGER_LENGTH; i++) {
-		outputBuffer[i] *= envelopeAmplitude * (0.5 * sinf(angle) + 0.5);
-		angle += angleIncrease;
+
+	if (samplesLeftInPhase > rangeLength) {
+		for (i = rangeStart; i < rangeEnd; i++) {
+			outputBuffer[i] *= envelopeAmplitude * (0.5 * sinf(angle) + 0.5);
+			angle += angleIncrease;
+		}
+		envelopePhaseTime += rangeLength;
 	}
-	envelopePhase = ATTACK;
+	else {
+		unsigned int endI = rangeStart + samplesLeftInPhase;
+		for (i = rangeStart; i < endI; i++) {
+			outputBuffer[i] *= envelopeAmplitude * (0.5 * sinf(angle) + 0.5);
+			angle += angleIncrease;
+		}
+		envelopePhase = ATTACK;
+		envelopePhaseTime = 0;
+	}
 	previousEnvelopePhase = RETRIGGER;
-	envelopePhaseTime = 0;
-	return RETRIGGER_LENGTH;
-
-
+	return i;
 }
 
 // Applies envelope phase DECAY to samples of outputBuffer.
-// i = index of first sample in outputBuffer where the DECAY curve is
-//     applied to.
-// Returns index of next sample to be processed in outputBuffer.
-unsigned int MainOscillator::applyDecay(float outputBuffer[], unsigned int i)
+// rangeStart - index of first sample in outputBuffer to process
+// rangeEnd   - index of last sample in outputBuffer to process + 1
+// When the envelope phase ends, less than rangeEnd - rangeStart samples
+// may have been processed.
+//     Returns index of next sample to be processed in outputBuffer.
+unsigned int MainOscillator::applyDecay(float outputBuffer[],
+	unsigned int rangeStart, unsigned int rangeEnd)
 {
-#if USE_OPTIMIZATIONS
 	unsigned int samplesLeftInPhase = decayTime - envelopePhaseTime;
-	unsigned int samplesLeftInBuffer = bufferLength - i;
+	unsigned int rangeLength = rangeEnd - rangeStart;
 
 	// See doc/expcurves.txt for explanation of the optimizations.
 	float t = -STEEPNESS * envelopePhaseTime / decayTime;
@@ -505,12 +550,13 @@ unsigned int MainOscillator::applyDecay(float outputBuffer[], unsigned int i)
 	c *= peakAmplitude;
 	d *= peakAmplitude;
 
-	if (samplesLeftInPhase > samplesLeftInBuffer) {
+	unsigned int i = rangeStart;
+	if (samplesLeftInPhase > rangeLength) {
 		for (; i < bufferLength; i++) {
 			outputBuffer[i] *= d + c * expf(t);
 			t += tIncrease;
 		}
-		envelopePhaseTime += samplesLeftInBuffer;
+		envelopePhaseTime += rangeLength;
 	}
 	else {
 		unsigned int endI = i + samplesLeftInPhase;
@@ -525,51 +571,18 @@ unsigned int MainOscillator::applyDecay(float outputBuffer[], unsigned int i)
 	envelopeAmplitude = d + c * expf(t - tIncrease);
 	previousEnvelopePhase = DECAY;
 	return i;
-
-#else
-	// Original version
-	unsigned int samplesLeft = decayTime - envelopePhaseTime;
-	float relativeTime = (float)envelopePhaseTime / decayTime;
-	float timeIncrease = 1.0 / (decayTime - 1);
-	float b = peakAmplitude / (expf(-STEEPNESS) - 1);
-	float amplitude = 0;
-
-	if (samplesLeft > bufferLength) {
-		envelopePhaseTime += bufferLength - i;
-		for (; i < bufferLength; i++) {
-			amplitude = 1 - (1 - sustainVolume) * b
-				* (expf(-STEEPNESS * relativeTime) - 1);
-			outputBuffer[i] *= amplitude;
-			relativeTime += timeIncrease;
-		}
-
-	}
-	else {
-		unsigned int endI = i + samplesLeft;
-		for (; i < endI; i++) {
-			amplitude = 1 - (1 - sustainVolume) * b
-				* (expf(-STEEPNESS * relativeTime) - 1);
-			outputBuffer[i] *= amplitude;
-			relativeTime += timeIncrease;
-		}
-		envelopePhase = SUSTAIN;
-		previousEnvelopePhase = ATTACK;
-		envelopePhaseTime = 0;
-	}
-	envelopeAmplitude = amplitude;
-	previousEnvelopePhase = DECAY;
-	return i;
-#endif // USE_OPTIMIZATIONS
 }
 
 // Applies envelope phase SUSTAIN to samples of outputBuffer.
-// i = index of first sample in outputBuffer where the DECAY curve is
-//     applied to.
+// rangeStart - index of first sample in outputBuffer to process
+// rangeEnd   - index of last sample in outputBuffer to process + 1
 // Returns index of next sample to be processed in outputBuffer.
-unsigned int MainOscillator::applySustain(float outputBuffer[], unsigned int i)
+unsigned int MainOscillator::applySustain(float outputBuffer[],
+	unsigned int rangeStart, unsigned int rangeEnd)
 {
 	float c = sustainVolume * peakAmplitude;
-	for (; i < bufferLength; i++) {
+	unsigned int i;
+	for (i = rangeStart; i < rangeEnd; i++) {
 		outputBuffer[i] *= c;
 	}
     envelopeAmplitude = c;
@@ -577,10 +590,13 @@ unsigned int MainOscillator::applySustain(float outputBuffer[], unsigned int i)
 }
 
 // Applies envelope phase RELEASE to samples of outputBuffer.
-// i = index of first sample in outputBuffer where the RELEASE curve is
-//     applied to.
-// Returns index of next sample to be processed in outputBuffer.
-unsigned int MainOscillator::applyRelease(float outputBuffer[], unsigned int i)
+// rangeStart - index of first sample in outputBuffer to process
+// rangeEnd   - index of last sample in outputBuffer to process + 1
+// When the envelope phase ends, less than rangeEnd - rangeStart samples
+// may have been processed.
+//     Returns index of next sample to be processed in outputBuffer.
+unsigned int MainOscillator::applyRelease(float outputBuffer[],
+	unsigned int rangeStart, unsigned int rangeEnd)
 {
 	if (previousEnvelopePhase != RELEASE) {
         previousEnvelopeAmplitude = envelopeAmplitude;
@@ -588,24 +604,24 @@ unsigned int MainOscillator::applyRelease(float outputBuffer[], unsigned int i)
 		previousEnvelopePhase = RELEASE;
 	}
 
-#if USE_OPTIMIZATIONS
 	unsigned int samplesLeftInPhase = releaseTime - envelopePhaseTime;
-	unsigned int samplesLeftInBuffer = bufferLength - i;
+	unsigned int rangeLength = rangeEnd - rangeStart;
 	float t = -STEEPNESS * envelopePhaseTime / releaseTime;
 	float tIncrease = -STEEPNESS / (releaseTime - 1);
 	float b = 1 / (1 - expf(-STEEPNESS));
 	float c = (1 - b) * previousEnvelopeAmplitude;
 	float d = b * previousEnvelopeAmplitude;
 
-	if (samplesLeftInPhase > samplesLeftInBuffer) {
-		envelopePhaseTime += samplesLeftInBuffer;
-		for (; i < bufferLength; i++) {
+	unsigned int i = rangeStart;
+	if (samplesLeftInPhase > rangeLength) {
+		envelopePhaseTime += rangeLength;
+		for (; i < rangeEnd; i++) {
 			outputBuffer[i] *= c + d * expf(t);
 			t += tIncrease;
 		}
 	}
 	else {
-		unsigned int endI = i + samplesLeftInPhase;
+		unsigned int endI = rangeStart + samplesLeftInPhase;
 		for (; i < endI; i++) {
 			outputBuffer[i] *= c + d * expf(t);
 			t += tIncrease;
@@ -615,51 +631,11 @@ unsigned int MainOscillator::applyRelease(float outputBuffer[], unsigned int i)
 	}
     envelopeAmplitude = c + d * expf(t - tIncrease);
 	return i;
-
-#else
-	// Original version
-	if (previousEnvelopePhase != RELEASE) {
-        previousEnvelopeAmplitude = envelopeAmplitude;
-		envelopePhaseTime = 0;
-		previousEnvelopePhase = RELEASE;
-	}
-
-	unsigned int samplesLeft = releaseTime - envelopePhaseTime;
-	float relativeTime = (float)envelopePhaseTime / releaseTime;
-	float timeIncrease = 1.0 / releaseTime;
-	float b = 1 / (expf(-STEEPNESS) - 1);
-	float amplitude = 0;
-
-	if (samplesLeft > bufferLength) {
-		envelopePhaseTime += bufferLength - i;
-		for (; i < bufferLength; i++) {
-			amplitude = previousEnvelopeAmplitude *
-				(1 - b * (expf(-STEEPNESS * relativeTime) - 1));
-			outputBuffer[i] *= amplitude;
-			relativeTime += timeIncrease;
-		}
-	}
-	else {
-		unsigned int endI = i + samplesLeft;
-		for (; i < endI; i++) {
-            amplitude = previousEnvelopeAmplitude *
-                (1 - b * (expf(-STEEPNESS * relativeTime) - 1));
-			outputBuffer[i] *= amplitude;
-			relativeTime += timeIncrease;
-		}
-		envelopePhase = OFF;
-		envelopePhaseTime = 0;
-	}
-
-    envelopeAmplitude = amplitude;
-	return i;
-#endif // USE_OPTIMIZATIONS
 }
 
 // Does a "fast mute": does an interpolation from last sample value to zero
 // in MUTE_LENGTH samples. The remaining sample values are replaced with
 // zeroes.
-// Returns index of next sample to be processed in outputBuffer.
 void MainOscillator::applyFastMute(float outputBuffer[])
 {
 	unsigned int i;
@@ -667,8 +643,13 @@ void MainOscillator::applyFastMute(float outputBuffer[])
 	if (turnOffLength > bufferLength) {
 		turnOffLength = bufferLength;
 	}
+
+	float sampleValue = lastSampleValue;
+	float valueDecrease = sampleValue / turnOffLength;
+
 	for (i = 0; i < turnOffLength; i++) {
-		outputBuffer[i] = (turnOffLength - i) * lastSample / turnOffLength;
+		outputBuffer[i] = sampleValue;
+		sampleValue -= valueDecrease;
 	}
 	memset(outputBuffer + turnOffLength, 0,
 			(bufferLength - turnOffLength) * sizeof(float));
