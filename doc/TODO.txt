@@ -4,19 +4,34 @@ Tehtävää aika- ja riippuvuusjärjestyksessä:
    MainOscillatoriin/Synthesizeriin pitää saada viivästytetty Note On ja
    Note On (viivästys n samplea): vasta sen jälkeen envelope alkaa muuttua.
    Tämä luultavasti saa tremolot (saman nuotin nopea toisto) toimimaan.
-   
-1.1 LowFrequencyOscillatoriin ja MainOscillatoriin:
-    renderöi puskurista samplet [a..b]. (sen sijaan, että koko puskurillinen).
-    Indeksit integereinä, ei pointtereina.
-    (TÄMÄ ON JO TEHTY.)
          
-1.2 Synthesizeriin tremolotunnistin: kunkin puskurillisen aikana:
+   Synthesizeriin tremolotunnistin: kunkin puskurillisen aikana:
     * laske, kuinka monta minkäkin sävelkorkeuden nuottia tullut
     * niille sävelkorkeuksille, joille nuotteja on enemmän kuin yksi, tehdään
       erikoiskäsittely
     * muille peruskäsittely
     * jos tulee uusi nuotti eikä vapaita oskillaattoriryhmiä ole, nuotti
-      hylätään.    
+      hylätään.
+   
+   Tällä hetkellä on tehty:
+   * oskillaattorien äänengenerointiin: generoi vain puskurin samplet [a..b]
+   * MIDI-nuottien lajittelu taulukoihin sortedNoteTime ja sortedNoteVelocity
+     (Synthesizerin metodeissa processMidiEvents, processNoteOn ja
+      processNoteOff)
+     
+   Seuraavaksi olisi hyvä testiprintata sortedNoteTime ja sortedNoteVelocity.   
+   Käytä 4096 samplen puskurikokoa, testi-mididataa Rosegardenilla.
+   (Yeah, TOIMII.)
+   
+   Jipii, nuottien alkuajat määriytyvät oikein ja ääni kuuluu!
+   Kuitenkin äyttää siltä, että note offit eivät löydä oikeaa
+   oskillaattoriryhmää.
+   Seuraavaksi: katso tuloste.txt.
+ 
+   
+   
+  
+   
 
 1.3 GDB:llä ajaessa näkyy neljä säiettä. Tutki, mikä säie on mikin, ja
     päivitä doc/developer_introduction.txt.

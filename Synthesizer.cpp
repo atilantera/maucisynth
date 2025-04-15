@@ -9,7 +9,6 @@
 
 Synthesizer * Synthesizer::synthInstance = NULL;
 
-//
 Synthesizer::Synthesizer(EventBuffer & b, SynthParameters & p):
 	events(b), parameters(p), filter(p.lowpassFrequency)
 {
@@ -24,11 +23,17 @@ Synthesizer::Synthesizer(EventBuffer & b, SynthParameters & p):
 	samplerateChanged = false;
 	bufferLengthChanged = false;
 
+	sortedNoteTime = NULL;
+	sortedNoteVelocity = NULL;
+	sortedNoteCount = NULL;
+	sortedNoteTime = new unsigned short[MIDI_PITCHES * MAX_TREMOLO_NOTES];
+	sortedNoteVelocity = new unsigned char[MIDI_PITCHES * MAX_TREMOLO_NOTES];
+	sortedNoteCount = new unsigned int[MIDI_PITCHES];
+
 	oscillatorBuffer = NULL;
 	lfoBuffer = NULL;
 	for (i = 0; i < POLYPHONY; i++) {
-		oscillator1[i] = NULL;
-		lfo1[i] = NULL;
+		oscillatorGroup[i] = NULL;
 	}
 
 	if(initJack() == false) {
@@ -43,14 +48,7 @@ Synthesizer::Synthesizer(EventBuffer & b, SynthParameters & p):
 	lfoBuffer = new float[bufferLength];
 
 	for (i = 0; i < POLYPHONY; i++) {
-		oscillator1[i] = new MainOscillator(parameters.osc1);
-		lfo1[i] = new LowFrequencyOscillator(parameters.osc1,
-		                                     *(oscillator1[i]) );
-	}
-
-	if (lfo1[POLYPHONY - 1] == NULL) {
-		std::cout << "Problem in starting the synth: not enough free memory."
-			<< std::endl;
+		oscillatorGroup[i] = new OscillatorGroup(parameters);
 	}
 
 	// Now everything is ready for sound rendering.
@@ -70,12 +68,15 @@ Synthesizer::~Synthesizer() {
 	if (synthIsRunning) {
 		jack_client_close(jackClient);
 	}
+	delete [] sortedNoteTime;
+	delete [] sortedNoteVelocity;
+	delete [] sortedNoteCount;
+
 	delete [] oscillatorBuffer;
 	delete [] lfoBuffer;
 
 	for (i = 0; i < POLYPHONY; i++) {
-		delete oscillator1[i];
-		delete lfo1[i];
+		delete oscillatorGroup[i];
 	}
 }
 
@@ -151,8 +152,8 @@ bool Synthesizer::initJack()
 // Parameter arg is not used.
 int Synthesizer::jackCallback(jack_nframes_t nframes, void * arg)
 {
-	synthInstance->processGuiEvents();
 	synthInstance->processMidiEvents(nframes);
+	synthInstance->processGuiEvents();
 	synthInstance->checkJackExceptions();
 	synthInstance->generateSound(nframes);
 	return 0;
@@ -208,26 +209,33 @@ void Synthesizer::generateSound(jack_nframes_t nframes)
 	}
 
 	if (useGlobalLfo) {
-		lfo1[0]->generateSound(lfoBuffer, 0, bufferLength);
+		oscillatorGroup[0]->lfo1->generateSound(lfoBuffer, 0, bufferLength);
 	}
 
-	unsigned int oscNum, i;
+	unsigned int groupNum, i;
 	bool noteFinished;
-	for (oscNum = 0; oscNum < POLYPHONY; oscNum++) {
-		if (oscillator1[oscNum]->getEnvelopePhase() != OFF) {
-			if (useDedicatedLfo) {
-				lfo1[oscNum]->generateSound(lfoBuffer, 0, bufferLength);
-			}
-			oscillator1[oscNum]->generateSound(oscillatorBuffer, lfoBuffer,
-				0, bufferLength, noteFinished);
-			for (i = 0; i < nframes; i++) {
-				outputBuffer[i] += oscillatorBuffer[i];
+	OscillatorGroup * group;
+
+	for (groupNum = 0; groupNum < POLYPHONY; groupNum++) {
+		group = oscillatorGroup[groupNum];
+		if (group->isPlaying == false) {
+			continue;
+		}
+
+		if (sortedNoteCount[group->notePitch] > 0) {
+			playMidiNotes(group, useDedicatedLfo, outputBuffer, nframes);
+		}
+		else {
+			noteFinished = renderNote(group, useDedicatedLfo, outputBuffer,
+				0, nframes);
+			if (noteFinished == true) {
+				group->isPlaying = false;
 			}
 		}
 	}
 
 #ifdef SYNTH_TESTING
-	printOscillatorPhases();
+	// printOscillatorPhases();
 #endif // SYNTH_TESTING
 
 	float mixingCoefficent = parameters.mainVolume / POLYPHONY;
@@ -236,6 +244,89 @@ void Synthesizer::generateSound(jack_nframes_t nframes)
 	}
 
 	filter.doFiltering(outputBuffer, bufferLength);
+}
+
+// Synthesizes sound of an oscillator group playing adjacent MIDI notes.
+// Parameter nframes is number of samples to render.
+// Uses oscillatorBuffer as output.
+void Synthesizer::playMidiNotes(OscillatorGroup * group,
+bool useDedicatedLfo, float * outputBuffer, jack_nframes_t nframes)
+{
+	unsigned int index, endIndex, rangeStart, rangeEnd;
+	bool noteFinished = false;
+	unsigned char pitch = group->notePitch;
+	unsigned char velocity;
+
+	index = pitch * MAX_TREMOLO_NOTES;
+	endIndex = index + sortedNoteCount[pitch];
+
+	rangeStart = 0;
+	rangeEnd = sortedNoteTime[index];
+	if (rangeEnd > 0) {
+		std::cout << "playMidiNotes: group=" << group << " range: [0," <<
+			rangeEnd << "]" << std::endl;
+		renderNote(group, useDedicatedLfo, outputBuffer, rangeStart,
+			rangeEnd);
+	}
+
+	for (; index < endIndex; index++) {
+		rangeStart = rangeEnd;
+		if (index + 1 == endIndex) {
+			rangeEnd = nframes;
+		}
+		else {
+			rangeEnd = sortedNoteTime[index + 1];
+		}
+
+		std::cout << "playMidiNotes: group=" << group << " range: [" <<
+			rangeStart << "," << rangeEnd << "]" << std::endl;
+
+		velocity = sortedNoteVelocity[index];
+		if (velocity < 128) {
+			group->osc1->noteOn(pitch, velocity, true);
+		}
+		else {
+			group->osc1->noteOff();
+		}
+
+		noteFinished = renderNote(group, useDedicatedLfo, outputBuffer,
+				rangeStart, rangeEnd);
+	}
+	if (noteFinished) {
+		group->isPlaying = false;
+	}
+}
+
+// Renders sound of an oscillator group playing a single note.
+// group - oscillator group
+// useDedicatedLfo - true if oscillator group is LFO modified and
+//                   frequency of the LFO depends on the pitch of the note
+// outputBuffer - add generated sound into this buffer
+// rangeStart - index of first sample in the buffer
+// rangeEnd   - index of last sample in the buffer + 1
+//
+// Returns true if all directly sound-producing oscillators were set to
+// OFF envelope phase at the sample [rangeEnd-1].
+bool Synthesizer::renderNote(OscillatorGroup * group, bool useDedicatedLfo,
+float * outputBuffer, unsigned int rangeStart, unsigned int rangeEnd)
+{
+	bool noteFinished;
+	unsigned int i;
+
+	// Render LFO
+	if (useDedicatedLfo) {
+		group->lfo1->generateSound(lfoBuffer, rangeStart, rangeEnd);
+	}
+
+	// Render MainOscillators
+	group->osc1->generateSound(oscillatorBuffer,
+		lfoBuffer, rangeStart, rangeEnd, noteFinished);
+
+	// Mix
+	for (i = rangeStart; i < rangeEnd; i++) {
+		outputBuffer[i] += oscillatorBuffer[i];
+	}
+	return noteFinished;
 }
 
 // JACK callback: samplerate changes
@@ -273,7 +364,7 @@ void Synthesizer::processGuiEvents()
 	unsigned char * ptr = events.swapBuffers(&dataLength);
 	unsigned char * endPtr = ptr + dataLength;
 
-	unsigned char key, velocity, parameterType;
+	unsigned char pitch, velocity, parameterType;
 	unsigned int parameterValue;
 	NoteSource source;
 
@@ -281,26 +372,27 @@ void Synthesizer::processGuiEvents()
 		switch (*ptr++) {
 
 		case 0x01: /* note on */
-		key = *ptr++;
+		pitch = *ptr++;
 		velocity = *ptr++;
+
 		if (*ptr++ == jackMidi) {
 			source = jackMidi;
 		}
 		else {
 			source = computerKeyboard;
 		}
-		processNoteOn(key, velocity, source);
+		processNoteOn(pitch, velocity, 0, source);
 		break;
 
 		case 0x02: /* note off */
-		key = *ptr++;
+		pitch = *ptr++;
 		if (*ptr++ == jackMidi) {
 			source = jackMidi;
 		}
 		else {
 			source = computerKeyboard;
 		}
-		processNoteOff(key, source);
+		processNoteOff(pitch, 0, source);
 		break;
 
 		case 0x03: /* all notes off */
@@ -325,6 +417,7 @@ void Synthesizer::processGuiEvents()
 }
 
 // Processes MIDI events from JACK.
+// Assigns notes to be played to oscillator groups.
 void Synthesizer::processMidiEvents(jack_nframes_t nframes)
 {
 	void * midiBuffer = jack_port_get_buffer(jackMidiInPort, nframes);
@@ -332,11 +425,19 @@ void Synthesizer::processMidiEvents(jack_nframes_t nframes)
 	jack_nframes_t eventCount;
 	eventCount = jack_midi_get_event_count(midiBuffer);
 
+	// Note on and note off events will be sorted by the note pitch to
+	// sortedNoteTime[] and sortedNoteVelocity[].
+	// This is required to assign note events with the same pitch to the
+	// same oscillator group.
+
+	memset(sortedNoteCount, 0, 128 * sizeof(unsigned int));
+
 	jack_nframes_t eventNumber;
 	jack_midi_event_t event;
 	unsigned char * ptr;
 	unsigned char * endPtr;
 	unsigned char channel;
+
 	for (eventNumber = 0; eventNumber < eventCount; eventNumber++) {
 
 		jack_midi_event_get(&event, midiBuffer, eventNumber);
@@ -346,34 +447,39 @@ void Synthesizer::processMidiEvents(jack_nframes_t nframes)
 		if (channel != this->midiInChannel) {
 			continue;
 		}
+
 		switch (*ptr & 0xF0) {
+
 		case 0x80: // Note Off
-			processNoteOff(ptr[1], jackMidi);
+			// ptr[1] is note pitch
+			processNoteOff(ptr[1], event.time, jackMidi);
 			break;
 
 		case 0x90: // Note on
-			processNoteOn(ptr[1], ptr[2], jackMidi);
+			// ptr[1] is note pitch
+			// ptr[2] is note velocity
+			processNoteOn(ptr[1], ptr[2], event.time, jackMidi);
 			break;
-
 
 		case 0xB0: // Controller change
 			processMidiControlChange(ptr[1], ptr[2]);
 			break;
-
 		}
 
 		// Print event data
-		std::cout << "MIDI Event: time=" << event.time << ", data:";
-		std::cout << std::hex;
-		ptr = (unsigned char *) event.buffer;
-		endPtr = ptr + event.size;
-		while (ptr < endPtr) {
-			std::cout << " " << (int)(*ptr);
-			ptr++;
-		}
-		std::cout << std::endl << std::dec;
+//		std::cout << "MIDI Event: time=" << event.time << ", data:";
+//		std::cout << std::hex;
+//		ptr = (unsigned char *) event.buffer;
+//		endPtr = ptr + event.size;
+//		while (ptr < endPtr) {
+//			std::cout << " " << (int)(*ptr);
+//			ptr++;
+//		}
+//		std::cout << std::endl << std::dec;
 	}
 	std::cout.flush();
+
+	//printSortedNotes();
 }
 
 // Processes MIDI "control change" event
@@ -389,40 +495,138 @@ void Synthesizer::processMidiControlChange(unsigned char type,
 }
 
 // Processes a "Note on" event from GUI or JACK MIDI port.
-void Synthesizer::processNoteOn(unsigned char key, unsigned char velocity,
-NoteSource source)
+// pitch - 0..127
+// velocity - 0..127
+// time - Time when the note starts playing. Units are samples from
+//        the beginning of the current sound buffer to be rendered.
+// source - GUI/JACK.
+// GUI and JACK notes are played individually: If there comes notes having
+// the same pitch from GUI and JACK, they will be assigned to different
+// oscillator groups.
+void Synthesizer::processNoteOn(unsigned char pitch, unsigned char velocity,
+unsigned short time, NoteSource source)
 {
-	// First try to find and retrigger an oscillator group with the same
-	// note key and note source
+	std::cout << "processNoteOn(" << (int)pitch << "," << (int)velocity <<
+		"," << time << "," << (int)source << std::endl;
+
 	unsigned int i;
-	for (i = 0; i < POLYPHONY; i++) {
-		if (noteKey[i] == key && noteSource[i] == source &&
-			oscillator1[i]->getEnvelopePhase() != OFF)
-		{
-			oscillator1[i]->noteOn(key, velocity, true);
+	if (source == jackMidi) {
+		unsigned int index = sortedNoteCount[pitch];
+		if (sortedNoteCount[pitch] == MAX_TREMOLO_NOTES) {
 			return;
 		}
-	}
 
-	// Then try to find a free oscillator group
-	for (i = 0; i < POLYPHONY; i++) {
-		if (oscillator1[i]->getEnvelopePhase() == OFF) {
-			oscillator1[i]->noteOn(key, velocity, false);
-			noteKey[i] = key;
-			noteSource[i] = source;
-			return;
+		index = pitch * MAX_TREMOLO_NOTES + sortedNoteCount[pitch];
+		sortedNoteTime[index] = time;
+		sortedNoteVelocity[index] = velocity;
+		sortedNoteCount[pitch]++;
+
+		// First try to assign note to an oscillator group that has been
+		// playing a note with the same pitch and source.
+		for (i = 0; i < POLYPHONY; i++) {
+			if (oscillatorGroup[i]->notePitch == pitch &&
+				oscillatorGroup[i]->noteSource == jackMidi &&
+				oscillatorGroup[i]->isPlaying == true)
+			{
+				// An oscillator group found. That group will play note data
+				// at sortedNoteTime[pitch].
+				return;
+			}
+		}
+
+		// The try to find a free oscillator group.
+		for (i = 0; i < POLYPHONY; i++) {
+			if (oscillatorGroup[i]->isPlaying == false) {
+				oscillatorGroup[i]->notePitch = pitch;
+				oscillatorGroup[i]->isPlaying = true;
+				return;
+			}
+		}
+
+		// Here the note is simply discarded.
+		sortedNoteCount[pitch]--;
+	}
+	else {
+		// source == computerKeyboard
+
+		// First try to find and retrigger an oscillator group with the same
+		// note pitch and note source
+
+		for (i = 0; i < POLYPHONY; i++) {
+			if (oscillatorGroup[i]->notePitch == pitch &&
+				oscillatorGroup[i]->noteSource == computerKeyboard &&
+				oscillatorGroup[i]->isPlaying == true)
+			{
+				oscillatorGroup[i]->osc1->noteOn(pitch, velocity, true);
+				return;
+			}
+		}
+
+		// Then try to find a free oscillator group
+		for (i = 0; i < POLYPHONY; i++) {
+			if (oscillatorGroup[i]->isPlaying == false) {
+				oscillatorGroup[i]->osc1->noteOn(pitch, velocity, false);
+				oscillatorGroup[i]->notePitch = pitch;
+				oscillatorGroup[i]->noteSource = source;
+				oscillatorGroup[i]->isPlaying = true;
+				return;
+			}
 		}
 	}
 }
 
 // Processes a "Note off" event from GUI or JACK MIDI port.
-void Synthesizer::processNoteOff(unsigned char key, NoteSource source)
+void Synthesizer::processNoteOff(unsigned char pitch, unsigned short time,
+NoteSource source)
 {
-	for (unsigned int i = 0; i < POLYPHONY; i++) {
-		if (noteKey[i] == key && noteSource[i] == source &&
-			oscillator1[i]->getEnvelopePhase() != OFF)
-		{
-			oscillator1[i]->noteOff();
+	std::cout << "processNoteOff(" << (int)pitch << "," << time << "," <<
+		(int)source << std::endl;
+
+	unsigned int i;
+	if (source == jackMidi) {
+		unsigned int index;
+		if (sortedNoteCount[pitch] == MAX_TREMOLO_NOTES) {
+			// Note off event overrides last event if it is note on.
+			index = pitch * MAX_TREMOLO_NOTES + sortedNoteCount[pitch];
+			if (sortedNoteVelocity[index] < 128) {
+				sortedNoteVelocity[index] = 128;
+			}
+			return;
+		}
+
+		for (i = 0; i < POLYPHONY; i++) {
+			if (oscillatorGroup[i]->notePitch == pitch &&
+				oscillatorGroup[i]->noteSource == source &&
+				oscillatorGroup[i]->isPlaying == true)
+			{
+				index = pitch * MAX_TREMOLO_NOTES + sortedNoteCount[pitch];
+
+				// If a "Note On" and a "Note Off" event with the same
+				// pitch occur at same time, ignore the note off.
+				// Synthesizer::generateSound() will then just retrigger the
+				// note.
+				if (sortedNoteCount[pitch] > 0 &&
+					sortedNoteTime[index - 1] == time)
+				{
+					return;
+				}
+
+				sortedNoteTime[index] = time;
+				sortedNoteVelocity[index] = 128;
+				sortedNoteCount[pitch]++;
+				return;
+			}
+		}
+	}
+	else {
+		// source == computerKeyboard
+		for (i = 0; i < POLYPHONY; i++) {
+			if (oscillatorGroup[i]->notePitch == pitch &&
+				oscillatorGroup[i]->noteSource == source &&
+				oscillatorGroup[i]->isPlaying == true)
+			{
+				oscillatorGroup[i]->osc1->noteOff();
+			}
 		}
 	}
 }
@@ -431,8 +635,10 @@ void Synthesizer::processNoteOff(unsigned char key, NoteSource source)
 void Synthesizer::processFastMute(NoteSource source)
 {
 	for (unsigned int i = 0; i < POLYPHONY; i++) {
-		if (noteSource[i] == source) {
-			oscillator1[i]->muteFast();
+		if (oscillatorGroup[i]->isPlaying == true &&
+			oscillatorGroup[i]->noteSource == source)
+		{
+			oscillatorGroup[i]->osc1->muteFast();
 		}
 	}
 }
@@ -508,7 +714,7 @@ void Synthesizer::printOscillatorPhases()
 	unsigned int i;
 	bool phasesChanged = false;
 	for (i = 0; i < POLYPHONY; i++) {
-		osc1curPhase[i] = oscillator1[i]->getEnvelopePhase();
+		osc1curPhase[i] = oscillatorGroup[i]->osc1->getEnvelopePhase();
 		if (osc1curPhase[i] != osc1prevPhase[i]) {
 			phasesChanged = true;
 		}
@@ -530,7 +736,28 @@ void Synthesizer::printOscillatorPhases()
 		}
 		std::cout << std::endl;
 	}
+}
 
+// Test method: prints contents of sortedNoteTime and sortedNoteVelocity
+void Synthesizer::printSortedNotes()
+{
+	unsigned int pitch, count, index, endIndex;
+
+	std::cout << "printSortedNotes() starts" << std::endl;
+
+	for (pitch = 0; pitch < 128; pitch++) {
+		count = sortedNoteCount[pitch];
+		if (count > 0) {
+			index = pitch * MAX_TREMOLO_NOTES;
+			endIndex = index + count;
+			std::cout << "pitch " << pitch << ":";
+			for (; index < endIndex; index++) {
+				std::cout << " (" << sortedNoteTime[index] << "," <<
+					(int)sortedNoteVelocity[index] << ")";
+			}
+			std::cout << std::endl;
+		}
+	}
 }
 
 #endif // SYNTH_TESTING

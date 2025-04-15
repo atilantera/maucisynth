@@ -14,6 +14,8 @@
 #ifndef SYNTHESIZER_H_
 #define SYNTHESIZER_H_
 
+#define SYNTH_TESTING 1
+
 #include <cstring>
 #include <iostream>
 #include <jack/jack.h>
@@ -26,26 +28,10 @@
 #include "LowpassFilter.h"
 #include "MainOscillator.h"
 #include "Oscillator.h"
-#include "OscillatorGroup.h"
 #include "SynthGui.h"
 #include "SynthParameters.h"
 
-#define SYNTH_TESTING 1
-
-// How many notes can be played simultaneously
 const unsigned int POLYPHONY = 8;
-
-// How many notes from the same key can be played in buffer
-// (Usually buffer size is 16..4096 samples, which is 0.4 .. 9.3 msec
-// @ 44100 Hz samplerate.)
-const unsigned int MAX_TREMOLO_NOTES = 16;
-
-// Number of possible MIDI note pitches.
-// 0   = double contra C (C-1 or C,,,)
-// 60  = middle / 1 line C (C4 or c')
-// 69  = 440 Hz A (A4 or a')
-// 127 = 6 line G (G9 or g'''''')
-const unsigned int MIDI_PITCHES = 128;
 
 class Synthesizer {
 public:
@@ -75,19 +61,15 @@ private:
 	// It is shared with SynthGui.
 	SynthParameters & parameters;
 
-	// MIDI note buffer for method processMidiEvents().
-	// Value 128 in sortedNoteVelocity means the event is "note off".
-	// Otherwise the event is "note on".
-	unsigned short * sortedNoteTime;
-	unsigned char * sortedNoteVelocity;
-	unsigned int * sortedNoteCount;
-
 	// Oscillators generate their sound to these buffers
 	float * oscillatorBuffer;
 	float * lfoBuffer;
 
 	// Oscillator and note data
-	OscillatorGroup * oscillatorGroup[POLYPHONY];
+	MainOscillator * oscillator1[POLYPHONY];
+	LowFrequencyOscillator * lfo1[POLYPHONY];
+	NoteSource noteSource[POLYPHONY];
+	unsigned char noteKey[POLYPHONY];
 
 	// Filters
 	LowpassFilter filter;
@@ -98,35 +80,23 @@ private:
 	static int updateBufferLength(jack_nframes_t nframes, void *arg);
 
 	void checkJackExceptions();
-
 	void generateSound(jack_nframes_t nframes);
-	void playMidiNotes(OscillatorGroup * group, bool useDedicatedLfo,
-			float * outputBuffer, jack_nframes_t nframes);
 
-	bool renderNote(OscillatorGroup * group, bool useDedicatedLfo,
-			float * outputBuffer, unsigned int rangeStart,
-			unsigned int rangeEnd);
-
+    void processEvents(jack_nframes_t nframes);
 	void processGuiEvents();
 	void processMidiEvents(jack_nframes_t nframes);
 	void processMidiControlChange(unsigned char type, unsigned char value);
-
 	void processNoteOn(unsigned char key, unsigned char velocity,
-		unsigned short time, NoteSource source);
-
+        unsigned short time, NoteSource source);
 	void processNoteOff(unsigned char key, unsigned short time,
-		NoteSource source);
-
+        NoteSource source);
 	void processFastMute(NoteSource source);
-	void processParameterChange(unsigned int parameter,
-		unsigned int parameterValue);
 
 #ifdef SYNTH_TESTING
 	// for testing purposes
 	EnvelopePhase osc1curPhase[POLYPHONY];
 	EnvelopePhase osc1prevPhase[POLYPHONY];
 	void printOscillatorPhases();
-	void printSortedNotes();
 #endif
 
 };

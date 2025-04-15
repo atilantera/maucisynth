@@ -1,0 +1,7 @@
+Maucisynthin ääniasetuksia:
+
+Asetus 1:
+LFO1: fixed 10 Hz, target Osc1 amplitude, amount 0,74
+Oscillator 1: Abs(Sine), A=128, D=5, S=100; R=2385
+* sopii hyvin nopeisiin, toistuviin sointuarpeggioihin
+(esim. ylös-alas tripletteinä 4 x tahdissa)

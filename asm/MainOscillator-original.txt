@@ -1,0 +1,39 @@
+void MainOscillator::synthesizeFromWavetable(float outputbuffer[],
+const float modulatorBuffer[])
+
+# registers:
+# eax = outputBuffer (sampleittain kasvava osoitin)
+# ebx = endPtr
+# ecx
+# edx
+# esi = wavetable
+# ebp
+# st0 = index
+# st1 = indexIncrease
+# st2 = tableLength
+
+
+# else { // globalParameters.lfoModulationTarget != FREQUENCY
+
+         jmp Loop2
+
+Loop1:   fucomi %st(2), %st     # if (index >= tableLength) <=> if (!(index < tableLength))
+         jb Label1:             # if (index < tableLength) skip index decrease
+         fsub %st(2), %st       # index -= tableLength
+
+                                # *outputBuffer = wavetable[(int)index]
+Label1:  fsts      -0x14(%ebp)           # st0 = *(ebp - 14 tavua)
+         cvttss2si -0x14(%ebp),   %edx   # edx = (int)index
+         mov       (%esi,%edx,4), %edx   # edx = *(esi + edx*4)   (edx = sample from wavetable[(int)index])
+         mov %edx, (%eax)                # *eax = edx
+
+         add %0x4, %eax         # outputBuffer++
+
+         fadd       %st(1), %st # index += indexIncrease
+
+Loop2:   cmp %ebx, %eax         # while (outputBuffer < endPtr)
+         jae Loop1
+
+         # angle = index / tableLength
+
+# Comment: this seems to be optimal.

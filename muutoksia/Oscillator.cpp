@@ -107,20 +107,12 @@ void Oscillator::generateWaveTables()
 	}
 }
 
-// Generates base frequencies for every MIDI pitch.
-// Uses Western 12 pitches/octave equal temperament system.
-// There are 128 MIDI pitches:
-// 0   = double contra C (C-1 or C,,,)
-// 60  = middle / 1 line C (C4 or c')
-// 69  = 440 Hz A (A4 or a')
-// 127 = 6 line G (G9 or g'''''')
+// Generates base frequencies for every MIDI key.
 void Oscillator::generateBaseFrequencies()
 {
-	// Western 12 pithes / octave equal temperament system:
-	// The "A" key above piano middle C (1-line C, C-4) is 440 Hz.
-	// It is assigned to MIDI pitch number 69.
 
-	// First generate every A pitch.
+	// Standard A key above piano middle C is 440 Hz.
+	// It is assigned to MIDI key number 69 (between 0 and 127).
 	baseFrequency[9]  = 13.75;
 	baseFrequency[21] = 27.5;
 	baseFrequency[33] = 55;
@@ -132,13 +124,12 @@ void Oscillator::generateBaseFrequencies()
 	baseFrequency[105] = 3520;
 	baseFrequency[117] = 7040;
 
-	// There are 12 pitches in an octave called "semitones".
 	float semitoneUp = powf(2, 1.0 / 12);
 	float semitoneDown = 1 / semitoneUp;
 	float f;
 	int i, j;
 
-	// Pitches 0..119
+	// Keys 0..119
 	for (i = 0; i <= 108; i += 12) {
 
 		f = baseFrequency[i + 9];
@@ -155,7 +146,7 @@ void Oscillator::generateBaseFrequencies()
 
 	}
 
-	// Pitches 120..127
+	// Keys 120..127
 	f = baseFrequency[120];
 	for (i = 121; i < 128; i++) {
 		f *= semitoneUp;

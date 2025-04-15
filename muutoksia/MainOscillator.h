@@ -30,13 +30,13 @@ public:
 	MainOscillator(OscillatorParameters & p);
 	virtual ~MainOscillator();
 
-	void noteOn(unsigned char notePitch, unsigned char noteVelocity,
+	void noteOn(unsigned char noteKey, unsigned char noteVelocity,
         bool retrigger);
 	void noteOff();
 	void muteFast();
 
 	void generateSound(float outputBuffer[], const float modulatorBuffer[],
-		unsigned int rangeStart, unsigned int rangeEnd, bool & noteFinished);
+		unsigned int firstSample, unsigned int lastSample, bool & noteFinished);
 
 	EnvelopePhase getEnvelopePhase() const;
 
@@ -49,7 +49,8 @@ protected:
 	float sustainVolume;
 	unsigned int releaseTime;
 
-	OscillatorParameters & globalParameters;
+	// Reference to a global parameter object owned by a Synthesizer object.
+	const OscillatorParameters & globalParameters;
 
 	// Dynamic parameter: Peak amplitude of the oscillator. MIDI note velocity
 	// determines this. It is coefficent between 0..1.
@@ -103,46 +104,46 @@ protected:
 	void setFrequency(float f);
 
 	void synthesizeFromWavetable(float outputBuffer[],
-		const float modulatorBuffer[], unsigned int rangeStart,
-		unsigned int rangeEnd);
+		const float modulatorBuffer[], unsigned int firstSample,
+		unsigned int lastSample);
 
 	void synthesizeTriangleWave(float outputBuffer[],
-		const float modulatorBuffer[], unsigned int rangeStart,
-		unsigned int rangeEnd);
+		const float modulatorBuffer[], unsigned int firstSample,
+		unsigned int lastSample);
 
 	void synthesizeSawtoothWave(float outputBuffer[],
-		const float modulatorBuffer[], unsigned int rangeStart,
-		unsigned int rangeEnd);
+		const float modulatorBuffer[], unsigned int firstSample,
+		unsigned int lastSample);
 
 	void synthesizePulseWave(float outputBuffer[],
-		const float modulatorBuffer[], unsigned int rangeStart,
-		unsigned int rangeEnd);
+		const float modulatorBuffer[], unsigned int firstSample,
+		unsigned int lastSample);
 
 	void applyAmplitudeModulation(float outputBuffer[],
-		const float modulatorBuffer[], unsigned int rangeStart,
-		unsigned int rangeEnd);
+		const float modulatorBuffer[], unsigned int firstSample,
+		unsigned int lastSample);
 
 	static void initializeEnvelopeTables();
 
-	void applyEnvelope(float outputBuffer[], unsigned int rangeStart,
-		unsigned int rangeEnd);
+	void applyEnvelope(float outputBuffer[], unsigned int firstSample,
+		unsigned int lastSample);
 
-	unsigned int applyAttack(float outputBuffer[], unsigned int rangeStart,
-		unsigned int rangeEnd);
+	unsigned int applyAttack(float outputBuffer[], unsigned int firstSample,
+		unsigned int lastSample);
 
-    unsigned int applyRetrigger(float outputBuffer[], unsigned int rangeStart,
-    	unsigned int rangeEnd);
+    unsigned int applyRetrigger(float outputBuffer[], unsigned int firstSample,
+    	unsigned int lastSample);
 
-	unsigned int applyDecay(float outputBuffer[], unsigned int rangeStart,
-		unsigned int rangeEnd);
+	unsigned int applyDecay(float outputBuffer[], unsigned int firstSample,
+		unsigned int lastSample);
 
-	unsigned int applySustain(float outputBuffer[], unsigned int rangeStart,
-		unsigned int rangeEnd);
+	unsigned int applySustain(float outputBuffer[], unsigned int firstSample,
+		unsigned int lastSample);
 
-	unsigned int applyRelease(float outputBuffer[], unsigned int rangeStart,
-		unsigned int rangeEnd);
+	unsigned int applyRelease(float outputBuffer[], unsigned int firstSample,
+		unsigned int lastSample);
 
-	void applyFastMute(float outputBuffer[]);
+	void applyFastMute(float outputBuffer[], unsigned int firstSample);
 };
 
 #endif /* MAINOSCILLATOR_H_ */

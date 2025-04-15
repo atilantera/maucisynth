@@ -466,8 +466,6 @@ unsigned int MainOscillator::applyAttack(float outputBuffer[],
 	// See doc/expcurves.txt for explanation of the optimization.
 	unsigned int samplesLeftInPhase = attackTime - envelopePhaseTime;
 	unsigned int rangeLength = rangeEnd - rangeStart;
-
-    // t is the time parameter of the exponential function
 	float t = -STEEPNESS * envelopePhaseTime / attackTime;
 	float tIncrease = -STEEPNESS / (attackTime - 1);
 	float b = peakAmplitude / (1 - expf(-STEEPNESS));
@@ -608,22 +606,14 @@ unsigned int MainOscillator::applyRelease(float outputBuffer[],
 
 	unsigned int samplesLeftInPhase = releaseTime - envelopePhaseTime;
 	unsigned int rangeLength = rangeEnd - rangeStart;
-
-	// t is the time parameter of the exponential function
 	float t = -STEEPNESS * envelopePhaseTime / releaseTime;
 	float tIncrease = -STEEPNESS / (releaseTime - 1);
-
-	// c and d control the proportions of the volume curve:
-	// c is the base, d controls the exponential term
-	// See doc/expcurves.txt for explanation of the optimization.
 	float b = 1 / (1 - expf(-STEEPNESS));
 	float c = (1 - b) * previousEnvelopeAmplitude;
 	float d = b * previousEnvelopeAmplitude;
 
 	unsigned int i = rangeStart;
 	if (samplesLeftInPhase > rangeLength) {
-		// The current audio buffer will have samples left after the end of
-		// the release curve, thus calculate to the end of the release curve.
 		envelopePhaseTime += rangeLength;
 		for (; i < rangeEnd; i++) {
 			outputBuffer[i] *= c + d * expf(t);
@@ -631,8 +621,6 @@ unsigned int MainOscillator::applyRelease(float outputBuffer[],
 		}
 	}
 	else {
-		// The current audio buffer may end before the release phase ends.
-		// Therefore, stop processing at the end of the audio buffer.
 		unsigned int endI = rangeStart + samplesLeftInPhase;
 		for (; i < endI; i++) {
 			outputBuffer[i] *= c + d * expf(t);

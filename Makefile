@@ -1,10 +1,11 @@
 CC=g++
 LD=g++
-CFLAGS= -std=c++0x -Wall -Wextra -pedantic -march=athlon-xp -O2 -g -pg \
+CFLAGS= -std=c++0x -Wall -Wextra -pedantic -march=native -O2 -g -pg \
         `pkg-config --cflags gtk+-2.0` 
 LIBS=-ljack -lm -pg `pkg-config --libs gtk+-2.0`
 OBJFILES=EventBuffer.o main.o LowFrequencyOscillator.o LowpassFilter.o \
-        MainOscillator.o Oscillator.o Synthesizer.o SynthGui.o SynthParameters.o
+        MainOscillator.o Oscillator.o OscillatorGroup.o Synthesizer.o \
+        SynthGui.o SynthParameters.o
 EXECUTABLE=maucisynth
 RM=rm -f
 
@@ -32,6 +33,9 @@ MainOscillator.o: MainOscillator.cpp MainOscillator.h
 
 Oscillator.o: Oscillator.cpp Oscillator.h
 	$(CC) $(CFLAGS) -c Oscillator.cpp
+
+OscillatorGroup.o: OscillatorGroup.cpp OscillatorGroup.h
+	$(CC) $(CFLAGS) -c OscillatorGroup.cpp
 
 Synthesizer.o: Synthesizer.cpp Synthesizer.h SynthParameters.h
 	$(CC) $(CFLAGS) -c Synthesizer.cpp

@@ -1,0 +1,44 @@
+
+AsmFunctions.o:     file format elf32-i386
+
+
+Disassembly of section .text:
+
+00000000 <nelio>:
+   0:	55                   	push   %ebp
+   1:	89 e5                	mov    %esp,%ebp
+   3:	d9 45 08             	flds   0x8(%ebp)
+   6:	d8 4d 08             	fmuls  0x8(%ebp)
+   9:	5d                   	pop    %ebp
+   a:	c3                   	ret    
+
+0000000b <omaSini>:
+   b:	55                   	push   %ebp
+   c:	89 e5                	mov    %esp,%ebp
+   e:	83 ed 32             	sub    $0x32,%ebp
+  11:	db 7d 00             	fstpt  0x0(%ebp)
+  14:	db 7d 0a             	fstpt  0xa(%ebp)
+  17:	db 7d 14             	fstpt  0x14(%ebp)
+  1a:	db 7d 1e             	fstpt  0x1e(%ebp)
+  1d:	db 7d 28             	fstpt  0x28(%ebp)
+  20:	d9 45 08             	flds   0x8(%ebp)
+  23:	d9 05 04 00 00 00    	flds   0x4
+  29:	d9 05 00 00 00 00    	flds   0x0
+  2f:	d9 45 08             	flds   0x8(%ebp)
+  32:	d9 45 08             	flds   0x8(%ebp)
+  35:	d8 c9                	fmul   %st(1),%st
+  37:	d9 c9                	fxch   %st(1)
+  39:	d8 c9                	fmul   %st(1),%st
+  3b:	d8 ca                	fmul   %st(2),%st
+  3d:	dc c4                	fadd   %st,%st(4)
+  3f:	d8 c9                	fmul   %st(1),%st
+  41:	d8 cb                	fmul   %st(3),%st
+  43:	d8 c4                	fadd   %st(4),%st
+  45:	db 6d 28             	fldt   0x28(%ebp)
+  48:	db 6d 1e             	fldt   0x1e(%ebp)
+  4b:	db 6d 14             	fldt   0x14(%ebp)
+  4e:	db 6d 0a             	fldt   0xa(%ebp)
+  51:	db 6d 00             	fldt   0x0(%ebp)
+  54:	83 c5 32             	add    $0x32,%ebp
+  57:	5d                   	pop    %ebp
+  58:	c3                   	ret    

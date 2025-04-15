@@ -123,7 +123,7 @@ void SynthGui::createLfo1Controls() {
 	// LFO 1 fixed frequency slider
 	group = gtk_radio_button_get_group(GTK_RADIO_BUTTON(button));
 	scale = gtk_hscale_new_with_range(MinFixedLfoFrequency,
-			MaxFixedLfoFrequency, 0.01);
+			MaxFixedLfoFrequency, 0.1);
 	gtk_widget_set_size_request(GTK_WIDGET(scale), 128, 38);
 	gtk_range_set_update_policy(GTK_RANGE(scale),
 		GTK_UPDATE_CONTINUOUS);
@@ -256,7 +256,7 @@ void SynthGui::createOscillator1Controls() {
 	label = gtk_label_new("R");
 	gtk_fixed_put(GTK_FIXED(fixed), label, 196, 0);
 
-	slider = gtk_vscale_new_with_range(MinAttackTime, MaxAttackTime, 1);
+	slider = gtk_vscale_new_with_range(MinAttackTime, MaxAttackTime, 5);
 	gtk_widget_set_size_request(GTK_WIDGET(slider), 32, 128);
 	gtk_range_set_inverted(GTK_RANGE(slider), TRUE);
 	gtk_range_set_update_policy(GTK_RANGE(slider), GTK_UPDATE_DELAYED);
@@ -265,7 +265,7 @@ void SynthGui::createOscillator1Controls() {
 		(gpointer)"osc1attack");
 	gtk_fixed_put(GTK_FIXED(fixed), slider, 90, 20);
 
-	slider = gtk_vscale_new_with_range(MinDecayTime, MaxDecayTime, 1);
+	slider = gtk_vscale_new_with_range(MinDecayTime, MaxDecayTime, 5);
 	gtk_widget_set_size_request(GTK_WIDGET(slider), 32, 128);
 	gtk_range_set_inverted(GTK_RANGE(slider), TRUE);
 	gtk_range_set_update_policy(GTK_RANGE(slider), GTK_UPDATE_DELAYED);
@@ -284,7 +284,7 @@ void SynthGui::createOscillator1Controls() {
 		(gpointer)"osc1sustain");
 	gtk_fixed_put(GTK_FIXED(fixed), slider, 154, 20);
 
-	slider = gtk_vscale_new_with_range(MinReleaseTime, MaxReleaseTime, 1);
+	slider = gtk_vscale_new_with_range(MinReleaseTime, MaxReleaseTime, 30);
 	gtk_widget_set_size_request(GTK_WIDGET(slider), 32, 128);
 	gtk_range_set_inverted(GTK_RANGE(slider), TRUE);
 	gtk_range_set_update_policy(GTK_RANGE(slider), GTK_UPDATE_DELAYED);
@@ -377,7 +377,7 @@ void SynthGui::onKeyPress(GdkEventKey * pKey) {
 }
 
 void SynthGui::onKeyRelease(GdkEventKey * pKey) {
-	int key, midiPitch;
+	int key, midiKey;
 	if (pKey->type != GDK_KEY_RELEASE) {
 		return;
 	}
@@ -389,8 +389,8 @@ void SynthGui::onKeyRelease(GdkEventKey * pKey) {
 
 	pthread_mutex_lock(&keyboardMutex);
 	if (key < 25) {
-		midiPitch = baseOctave * 12 + key;
-		synthEvents.addNoteOff(midiPitch, computerKeyboard);
+		midiKey = baseOctave * 12 + key;
+		synthEvents.addNoteOff(midiKey, computerKeyboard);
 	}
 	keyIsPressed[key] = FALSE;
 	pthread_mutex_unlock(&keyboardMutex);

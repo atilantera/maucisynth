@@ -1,0 +1,278 @@
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+processNoteOn(48,100,4018,2
+printSortedNotes() starts
+pitch 48: (4018,100)
+playMidiNotes: group=0x85e50d0 range: [0,4018]
+playMidiNotes: group=0x85e50d0 range: [4018,4096]
+processNoteOff(48,2688,2
+processNoteOn(52,100,2688,2
+printSortedNotes() starts
+pitch 52: (2688,100)
+playMidiNotes: group=0x85e5170 range: [0,2688]
+playMidiNotes: group=0x85e5170 range: [2688,4096]
+processNoteOff(52,1325,2
+processNoteOn(55,100,1325,2
+processNoteOff(55,4060,2
+processNoteOn(52,100,4060,2
+printSortedNotes() starts
+pitch 52: (4060,100)
+pitch 55: (1325,100)
+playMidiNotes: group=0x85e5170 range: [0,4060]
+playMidiNotes: group=0x85e5170 range: [4060,4096]
+playMidiNotes: group=0x85e5210 range: [0,1325]
+playMidiNotes: group=0x85e5210 range: [1325,4096]
+playMidiNotes: group=0x85e52b0 range: [0,4060]
+playMidiNotes: group=0x85e52b0 range: [4060,4096]
+processNoteOff(52,2787,2
+processNoteOn(48,100,2787,2
+printSortedNotes() starts
+pitch 48: (2787,100)
+playMidiNotes: group=0x85e50d0 range: [0,2787]
+playMidiNotes: group=0x85e50d0 range: [2787,4096]
+playMidiNotes: group=0x85e5350 range: [0,2787]
+playMidiNotes: group=0x85e5350 range: [2787,4096]
+processNoteOff(48,1424,2
+processNoteOn(52,100,1424,2
+printSortedNotes() starts
+pitch 52: (1424,100)
+playMidiNotes: group=0x85e5170 range: [0,1424]
+playMidiNotes: group=0x85e5170 range: [1424,4096]
+playMidiNotes: group=0x85e52b0 range: [0,1424]
+playMidiNotes: group=0x85e52b0 range: [1424,4096]
+playMidiNotes: group=0x85e53f0 range: [0,1424]
+playMidiNotes: group=0x85e53f0 range: [1424,4096]
+processNoteOff(52,63,2
+processNoteOn(55,100,63,2
+processNoteOff(55,2797,2
+processNoteOn(52,100,2797,2
+printSortedNotes() starts
+pitch 52: (2797,100)
+pitch 55: (63,100)
+playMidiNotes: group=0x85e5170 range: [0,2797]
+playMidiNotes: group=0x85e5170 range: [2797,4096]
+playMidiNotes: group=0x85e5210 range: [0,63]
+playMidiNotes: group=0x85e5210 range: [63,4096]
+playMidiNotes: group=0x85e52b0 range: [0,2797]
+playMidiNotes: group=0x85e52b0 range: [2797,4096]
+playMidiNotes: group=0x85e53f0 range: [0,2797]
+playMidiNotes: group=0x85e53f0 range: [2797,4096]
+playMidiNotes: group=0x85e5490 range: [0,63]
+playMidiNotes: group=0x85e5490 range: [63,4096]
+playMidiNotes: group=0x85e5530 range: [0,2797]
+playMidiNotes: group=0x85e5530 range: [2797,4096]
+processNoteOff(52,1523,2
+processNoteOn(48,100,1524,2
+printSortedNotes() starts
+processNoteOff(48,161,2
+processNoteOn(52,100,161,2
+processNoteOff(52,2895,2
+processNoteOn(55,100,2895,2
+printSortedNotes() starts
+processNoteOff(55,1534,2
+processNoteOn(52,100,1534,2
+printSortedNotes() starts
+processNoteOff(52,260,2
+processNoteOn(48,100,260,2
+processNoteOff(48,2994,2
+processNoteOn(52,100,2994,2
+printSortedNotes() starts
+processNoteOff(52,1631,2
+processNoteOn(55,100,1631,2
+printSortedNotes() starts
+processNoteOff(55,270,2
+processNoteOn(52,100,270,2
+processNoteOff(52,3093,2
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+processNoteOn(60,100,0,1
+printSortedNotes() starts
+processNoteOff(60,0,1
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+processNoteOn(64,100,0,1
+printSortedNotes() starts
+processNoteOff(64,0,1
+printSortedNotes() starts
+processNoteOn(65,100,0,1
+processNoteOn(67,100,0,1
+printSortedNotes() starts
+processNoteOff(65,0,1
+processNoteOff(67,0,1
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+processNoteOn(60,100,0,1
+processNoteOn(62,100,0,1
+printSortedNotes() starts
+processNoteOn(64,100,0,1
+processNoteOff(60,0,1
+processNoteOn(65,100,0,1
+processNoteOff(62,0,1
+processNoteOff(64,0,1
+printSortedNotes() starts
+processNoteOff(65,0,1
+processNoteOn(60,100,0,1
+processNoteOn(62,100,0,1
+processNoteOn(64,100,0,1
+processNoteOff(60,0,1
+printSortedNotes() starts
+processNoteOn(65,100,0,1
+processNoteOff(62,0,1
+processNoteOff(64,0,1
+processNoteOff(65,0,1
+processNoteOn(60,100,0,1
+processNoteOn(62,100,0,1
+printSortedNotes() starts
+processNoteOn(64,100,0,1
+processNoteOn(65,100,0,1
+processNoteOff(60,0,1
+processNoteOff(62,0,1
+processNoteOff(64,0,1
+printSortedNotes() starts
+processNoteOff(65,0,1
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts
+printSortedNotes() starts

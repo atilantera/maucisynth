@@ -1,0 +1,138 @@
+14.05.2012. Jep jep, MIDI oli helppo saada toimimaan JACKin avulla.
+            Sitten tuleekin vähän enemmän näpräämistä, kun pitää saada
+            oskillaattori soittamaan useita nuotteja yhdellä puskurillisella
+            (tremolot). 
+
+06.04.2012. LFO:kin saatiin toimimaan aika helposti, kun oli ensin tehty
+            huolelliset yksikkötestit. Jee!
+
+04.04.2012. Tulipa viimein optimoitua envelopekäyrät.
+            Toistolauseiden tekemistä pointtereiden avulla kannattaa välttää:
+            - silmä ei näe niin helposti, milloin lasketaan pointtereilla
+            - ylimääräisen silmukan loppupointterin tekeminen on rumaa
+            - taulukkoindeksi ovat kauniita ja selkeitä:
+            
+            float * ptr = parametriOsoite
+            float * endPtr = parametriOsoite + taulukonKoko;
+            while (ptr < endPtr) {
+            	*ptr++ *= skaalausarvo;
+            }
+            
+            vrt.
+            
+            for (unsigned int i = 0; i < taulukonKoko; i++) {
+            	parametriOsoite[i] *= skaalausArvo;
+            }
+            
+            Jos välttämättä pitää tehdä ääritrimmattu versio, niin sitten
+            kokonaan assemblerilla.
+
+03.04.2012. Yllätys yllätys: envelopen esilaskettu taulukkoversio onkin
+            5-6 KERTAA HITAAMPI kuin se versio, jossa on expf-kutsuja.
+            Ilmeisesti taulukkoarvojen hakeminen muistista sitten oikeasti on
+            niin hidasta. 
+
+31.03.2012. Tuli tehtyä jotenkin C-ohjelmille tyypillinen bugi: jonkin taulukon
+            arvot ovat osittain korruptoituneita, etkä tiedä, missä kohtaa
+            ohjelmaa korruptoituminen tapahtuu.
+            
+            Bugin metsästys:
+            1. Tehdään metodi Oscillator::debugCheckTables, jolla voi
+            tutkia, missä kohtaa ohjelmaa aaltotaulut menevät rikki.
+            Tehdään kutsuja siihen useammassa kohtaa ohjelmaa:
+            * Oscillator::generateWaveTables() loppu
+            * PerformanceTests::PerformanceTests() alku
+            * PerformanceTests::PerformanceTests() loppu
+            Kyllä, absSineTable[125] muuttuu arvoltaan yli ykköseksi, kun
+            PerformanceTestsin konstruktori päättyy.
+            
+            Lisätään kolmas kutsu puoleenväliin konstruktoria. Nyt havaitaan,
+            että MainOscillator-olioita luodessa aaltotaulut menevät rikki.
+            
+            Lisätään kutsut Oscillatorin ja MainOscillatorin konstruktorien
+            alkuun ja loppuun. Havaitaan, että aaltotaulu on rikki jo siinä
+            vaiheessa, kun Oscillatorin konstruktori alkaa! Jotain hirveää on
+            siis tekeillä.
+            
+            Seuraavaksi ryhdytään ajamaan ohjelmaa rivi riviltä gdb:llä
+            alkaen Oscillator::generateWaveTables():in lopusta.
+            Jokaisen rivin jälkeen printataan Oscillator::absSineTable[125].
+            
+            Tulos: näyttää siltä, että Oscillator::Oscillator -konstruktorissa
+            heti generateWaveTables():in jälkeen kutsuttu staattinen metodi
+            generateBaseFrequencies() korruptoi absSineTable:n.
+            
+            Kyllä, jotain tapahtuu Oscillator::generateBaseFrequenciesissa
+            riveillä 119-151.
+            Tarkemmin 131-141.
+            Bugi löytyi: baseFrequency[69 - j * 12 + i] = jotain.
+            Silmukoissa j = 1..7 ja i = 0..11.
+            j:n loppuarvo on yksi liikaa, pitäisi olla 5.
+            Kun j = 7, niin 69 - j * 12 + i = 69 - 7 * 12 + i = -15 + i.
+            Muistissa absSineTable ja baseFrequency sattuvat olemaan täsmälleen
+            peräkkäin. Kun baseFrequencyä käsittelee indeksillä -15..-1,
+            niin kyseessä ovatkin absSineTablen indeksit 113..127!
+            
+            Mitä tästä opimme:
+            1. generateBaseFrequencies on vähän turhan monimutkainen.
+            2. C-ohjelma EI varoita, jos taulukkoindeksi on liian pieni tai
+               liian suuri. Näin ollen taulukkoindeksi ei ole yhtään sen
+               turvallisempi kuin pointterikaan, se vain näyttää selkeämmältä.
+               Vasta Valgrind paljastaa taulukoiden ylitykset ja alitukset.
+            3. Huolellisella päättelyllä pystyt kuitenkin paikantamaan bugin.
+               
+            Nyt kun ohjelmaa pääsi ns. järjestelmätestaamaan, niin löytyi
+            vielä useita täysin uusia bugeja: naksuntaa, rätinää,
+            angle-muuttujien satunnaisesti epäkelpoja arvoja.
+
+29.03.2012. Rakas päiväkirja, tänään tuli löydettyä aivan kaamea bugi.
+            Pistin MainOscillatorTestin konstruktoriin
+            Oscillator::randomDetune = 0;. Silloin oskillaattorit värähtelivät
+            tieteellisen tarkasti ja paljastui, että koska MainOscillatorin
+            synthesize*-metodeissa on if (angle > 1), niin käy niin, että
+            angle voi olla jollain kierroksella tasan yksi, ja sen seurauksena
+            luetaan jotain dataan aaltotaulukon loppupään ulkopuolelta!
+            Bugi on vaikea löytää, koska oikeita nuotteja soitettaessa
+            nuottien taajuudet sellaisia, ettei anglePerSample voi millään
+            saada anglea summautumaan tasan ykköseksi. Onneksi bugin sai
+            helposti korjattua korvaamalla > -vertailun >= -vertailulla.
+            Huh huh. Lisäksi tuli asennettua uusin Eclipse CDT Linux, joka
+            vihdoinkin osaa näyttää olioiden metodeita ja kenttiä suoraan
+            editoriin kirjoittaessa. Lisäksi debuggaus Eclipsellä on aivan
+            mahtavaa: voi heitellä breakpointteja suoraan koodiin, ja
+            viereisissä ikkunoissa näkyvät automaattisesti muuttujien arvot
+            ja jopa assembler-koodi ja suorittimen rekisterit! <333333333 
+
+25.03.2012. Tulipa tehtyä hienot tietorakenneluokat ValueSet ja KeyValueSet.
+            Ehkä liiankin hienot. Lähinnä ärsytti sellainen epäeleganttius,
+            että jokaisella puskurinrenderöintikerralla käydään läpi kaikki
+            oskillaattorit, vaikka oikeasti tarvitsisi käydä vain soivat.
+            Samoin ärsytti se, että myös silloin, kun tulee note on tai note
+            of, niin pitää pahimmassa tapauksessa kelata läpi koko oskillaat-
+            toritaulukko. Se on siis O(n).
+                Okei, kyllähän 16 oskillaattoria käy läpi aika nopeasti, jos
+            käyttää pointteria. 16 nuotin polyfonia vielä riittäisi aika hyvin
+            monotimbraaliselle synalle. Sikäli taidettiin tehdä vähän over-
+            engineeringiä. 
+                gprof antakoon tuomion siitä, kumpi tapa on parempi.
+                Suoraan sanottuna taas tuli trimmattua jotain ihan turhaa.
+            Mielessäni taistelevat halu eleganssiin ja toisaalta halu
+            toimivaan softaan.
+
+23.03.2012. JACK-jutskat sujuivat vaivattomasti. JACK antaakin aina saman
+            osoittimen puskuriin joka renderöintikerralla. Hyvä, että tuli
+            mietittyä, onko erillinen EventBufferin purkusäie tarpeellinen.
+            Ja piru vie, olen kokenut mutexit nopeiksi, kun mutexia ei vaan
+            jätä päälle milloinkaan turhan takia.
+
+22.03.2012. Verhokäyrä meni aika mallikkaasti. Tarvitsi vain kopioida kaavat
+            ja koodi C-versiosta.
+
+19.03.2012. Pointtereiden sijasta taulukoita ja taulukkoindeksejä.
+            Idea: pointtereilla ei kannata räplätä turhan päiten, koska ne
+            ovat vähän sekavia. Taulukkoindekseillä asia tulee ilmi selvemmin,
+            ja sitä paitsi GCC osaa optimoida.
+
+
+
+

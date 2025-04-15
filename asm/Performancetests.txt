@@ -1,0 +1,56 @@
+Calculating sine wave by tailored Taylor series:
+
+    ptr = destTable;
+    float sineSum;
+    float x, xPower;
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &beginTime);
+    while (ptr < endPtr) {
+//      if (angle < -1.570796 || angle > 1.570796) {
+//          x = 3.141593 - angle;
+//      }
+//      else {
+//          x = angle;
+//      }
+//      sineSum = x;
+//      xPower *= x * x;
+//      sineSum -= xPower * 0.1666667;
+//      xPower *= x * x;
+//      sineSum += xPower * 0.0083333;
+//      xPower *= x * x;
+//        *ptr++ = sineSum;
+        sineSum = angle;
+        xPower *= angle * angle;
+        sineSum -= xPower * 0.1666667;
+        xPower *= angle * angle;
+        sineSum += xPower * 0.0083333;
+        xPower *= angle * angle;
+        *ptr++ = sineSum;
+
+        angle += angleIncrease;
+    }
+
+# possible register usage:
+# eax = ptr
+# ebx = endPtr
+# st1 = angle
+# st2 = anglePower
+# st3 = sineSum
+# st4 = -0.1666667
+# st5 = 0.0083333
+# st6 = angleIncrease
+
+    while (eax < ebx) {
+        st3 = st1;
+        st2 = st1;
+        st2 *= st1;
+        st2 *= st1;
+        st0 = st2;
+        st0 *= st4;
+        st3 += s0;
+        st2 *= st1;
+        st2 *= st1;
+        st0 = st2;
+        st0 *= st5;
+        st3 += s0;
+        st1 += st6;
+    }
