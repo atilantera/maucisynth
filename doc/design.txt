@@ -1,0 +1,113 @@
+Design of maucisynth
+
+1. Oscillators and notes
+------------------------
+Polyphony: the synthesizer can play N notes simultaneously. N = const
+POLYPHONY at Synthesizer.h.
+
+For each note there is an _oscillator group_. There are N oscillator groups in
+the synthesizer. Each oscillator group consists of:
+    - 1 MainOscillator (which produces sound)
+    - 1 LowFrequencyOscillator (which may modulate the MainOscillator)
+
+    Comment: Oscillator groups are analogous to piano strings or pipes in a
+    pipe organ.
+    
+The synthesizer can receive notes from two _note sources_: GUI and MIDI.
+GUI sends notes when the user presses alphanumeric keys on the computer
+keyboard. MIDI notes are received from JACK.
+    
+    Comment: The usability of the synthesizer is better if GUI can send notes.
+    When the user adjusts the synthesizer parameters by mouse from the GUI,
+    he or she can easily play some test notes by computer keyboard. For some
+    users, it is not possible to have a MIDI keyboard near the computer mouse.
+    Other users might not have a MIDI keyboard at all. Therefore it is handy
+    to be able to play the synthesizer from the same active GUI window that
+    controls the parameters of the synthesizer.
+    
+Each oscillator group is one of the three states:
+    (a) Free for new note. Envelope curve is in "off" phase.
+    (b) Playing a note, envelope curve is in attack, decay or sustain phase.
+    (c) Ended playing a note, envelope curve is in release phase.
+
+When synthesizer receices a "note on" -message, then:
+    1. If there is an oscillator group which is playing note from the same
+       key as in the "note on" message AND from the same note source (GUI/MIDI),
+       then the new note described by the "note on" message will REPLACE the
+       current note playing.
+    2. Otherwise, a free oscillator group is used for the new note.
+    
+    Comment: This means that notes from the GUI and MIDI will be treated as
+    separate notes: their key presses and releases won't mix. On the other
+    hand, fastly repeating notes (like tremolo or continuous arpeggio)
+    re-trigger the same oscillator group: newer note always replaces the older
+    one.
+    
+         
+        
+
+2. Thread execution process:
+----------------------------
+
+JACK thread:
+1. JACK calls Synthesizer::jackCallback
+2. Synthesizer::jackCallback calls Synthesizer::processEvents
+3. Synthesizer::jackCallback calls Synthesizer::renderSound
+
+GUI thread:
+Gui just waits for events. When something happens, it puts the events
+into EventBuffer, where Synthesizer will them later.
+
+
+
+3. Performance
+--------------
+Optimization targets:
+1. Envelope curves: expf() is called for every sample AND for every note.
+   Solutions:
+   1. Make precalculated table of the exponential function expf().
+   2. Make a shared table of the envelope amplitude: when parameters do not
+      change, all the MainOscillators inside the same oscillator group have same
+      ADSR curve. It is only needed to calculate attack, decay and release
+      phases. We already know that attack and decay maximum time is one second
+      and release time is three seconds. Like this:
+      
+      float attackTable = new float[MaxAttackTime * 0.001 * samplerate];
+      float decayTable = new float[MaxDecayTime * 0.001 * samplerate];
+      float releaseTable = new float[MaxReleaseTime * 0.001 * samplerate];
+      
+      Table of the envelope amplitude is updated sample by sample
+      when new sound is rendered. Otherwise precalculating the ADSR curve
+      would make a spike to the CPU when ADSR parameters change.
+
+
+Problem 1: (not very serious)
+On 1400 MHz Athlon XP, the CPU usage jumps to 60-80% if the slider
+widgets in GUI are adjusted forth and back very fast.
+    CPU usage reported by system performance monitor:
+    maucisynth    44.4 %
+    Xorg          33.5 %
+    jackd         15.1 %
+    qjackctl.bin   2.3 %
+    These processes consist nearly all of 78% of total CPU usage.
+    The system (OS kernel) uses 16.4% percent of the CPU time. 
+
+However, gprof shows that the synthesizer program itself takes only a
+fraction of a percent of the total CPU time to handle slider changes.
+Therefore, the real suspects for resource usage are:
+    * mutex usage in EventBuffer
+    * X server
+    * GTK+ and Glib libraries
+    * JACK, that is waiting for some I/O resource to be free
+    * Linux kernel, that is also trying to manage some resources efficiently
+      because of the user input
+Note: also GIMP creates 50% CPU usage when some slider is changed fast.
+Also GNOME keyboard settings does the same thing. Meanwhile, GhostView,
+that is implemented in Motif instead of GTK+, creates only 7% CPU usage
+when one slider changes constantly (and scrolls a small list of page
+numbers). This might be a hint that GTK+ is a resource hog. It might be
+interesting to see if Qt is any better.
+
+Try to run only the synthesizer gui without any callbacks and see how
+much CPU resources the sliders itself create.
+

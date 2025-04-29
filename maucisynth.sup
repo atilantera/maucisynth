@@ -1,0 +1,13 @@
+{
+   libg1
+   Memcheck:Leak
+   fun:*
+   obj:/lib/libg*
+}
+{
+   usrlib1
+   Memcheck:Leak
+   fun:*
+   obj:/usr/lib/lib*
+}
+

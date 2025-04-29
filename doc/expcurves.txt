@@ -1,0 +1,82 @@
+Exponential ADSR curves used in maucisynth
+
+General mathematics and physics:
+Vibrations in the nature, like in a guitar string and bell, fade out
+exponentially. That means that at each moment the decrease of the amplitude is
+proportional to the current amplitude.
+
+Programming optimizations:
+Calculating e^x with expf() is slow. It's possible to rearrange the amplitude
+formula so that it contains only one calculation of e^x at each sample.
+Of cource we also want reduce number of substractions and multiplications.
+Therefore we precalculate some constants: b, c and d.
+
+We also can reparametrize the -s*x in e^(-s*x) by substituting t = -s*x.
+Now, instead of
+     * increasing x by 1/attackTime
+     * calculating -s*x
+     * feeding the result to expf() function,
+we
+     * increase t by -s/attackTime
+     * feed the result to expf() function
+and get the same result, but we get rid of one multiplication inside the
+calculation loop!
+
+
+Attack: MainOscillator::applyAttack()
+Exponential curve which grows fast at first and then slower to the limit
+of peak amplitude.
+
+s = 4
+b = 1 / (1 - e^(-s))
+f(x) = b * (1 - e^(-s * x))
+x = 0..1 (x increases 1 / (attackTime - 1) by each sample) 
+
+    optimization:
+    t = -s * x
+    f(t) = b * (1 - e^t)
+    t = 0 .. -s. (t increases -s / (attackTime - 1) by each sample)
+         
+         
+    
+Decay: MainOscillator::applyDecay()
+Exponential curve which at first decreases fast from peak amplitude and
+then slover, almost reaching the sustain amplitude in the end.
+
+s = 4
+b = 1 / (1 - e^(-s))
+f(x) = 1 - (1 - sustain) * b * (1 - e^(-s * x))
+x = 0..1 (x increases 1 / (decayTime - 1) by each sample)
+
+	optimization 1:
+	t = -s * x
+	c = (1 - sustain) * b;
+	f(t) = 1 - c * (1 - e^t) 
+	     = 1 - c + c * e^t    , t = 0 .. -s
+	     
+	optimization 2:
+	d = 1 - c = 1 - (1 - sustain) * b
+	f(t) = d + c * e^t,   t = 0 .. -s
+	     
+
+
+
+Release: MainOscillator::applyRelease()
+Like decay, but decreases from sustain amplitude to zero.
+
+s = 4
+b = 1 / (1 - e^(-s))
+f(x) = prevAmplitude * (1 - b * (1 - e^(-s * x))
+x = 0..1 (x increases 1 / (releaseTime - 1) by each sample)
+
+    optimization 1:
+    t = -s * x
+    f(t) = prevAmplitude * (1 - b * (1 - e^t))
+         = prevAmplitude * (1 - b + b*e^t)
+         = prevAmplitude - b*prevAmplitude + prevAmplitude*b*e^t
+    (t = 0 .. -s)
+            
+    optimization 2:
+    c = prevAmplitude - b*prevAmplitude = (1 - b) * prevAmplitude
+    d = prevAmplitude * b
+    f(t) =  c + d * e^t,   t = 0 .. -s
