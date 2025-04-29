@@ -26,10 +26,9 @@ Time-amplitude view of square wave signal with pulse width modulation.
 
 ## Sound samples
 
-![](media/maucisynth.mp4)
+https://github.com/user-attachments/assets/7fd0ac55-3e76-4b03-86ae-ab9e8b6559fd
 
 ![Sawtooth demo 1](media/sawtooth1.mp3)
 
 ![Sawtooth demo 2](media/sawtooth2.flac)
-
 
