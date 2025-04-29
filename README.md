@@ -24,3 +24,10 @@ Time-amplitude view of square wave signal with pulse width modulation.
 - User interface built on GTK+, sound API JACK (http://jackaudio.org/)
 - Realtime, multithreaded
 
+## Sound samples
+
+![Sawtooth demo 1](media/sawtooth1.mp3)
+
+![Sawtooth demo 2](media/sawtooth2.flac)
+
+
