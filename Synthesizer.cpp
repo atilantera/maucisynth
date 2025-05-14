@@ -479,7 +479,7 @@ void Synthesizer::processMidiEvents(jack_nframes_t nframes)
 	}
 	std::cout.flush();
 
-	//printSortedNotes();
+	printSortedNotes();
 }
 
 // Processes MIDI "control change" event
@@ -513,73 +513,40 @@ unsigned short time, NoteSource source)
 	", time " << time << ", source " << (int)source << 
     ", velocity " << (int)velocity << std::endl;
 
-	unsigned int i;
-	if (source == JACK_MIDI) {
-		unsigned int index = sortedNoteCount[pitch];
-		if (sortedNoteCount[pitch] == MAX_TREMOLO_NOTES) {
-			return;
-		}
+    // First try to find and retrigger an oscillator group with the same
+    // note pitch and note source
 
-		index = pitch * MAX_TREMOLO_NOTES + sortedNoteCount[pitch];
-		sortedNoteTime[index] = time;
-		sortedNoteVelocity[index] = velocity;
-		sortedNoteCount[pitch]++;
+    for (int i = 0; i < POLYPHONY; i++) {
+        OscillatorGroup * og = oscillatorGroup[i];
+        if (og->notePitch == pitch && og->noteSource == source &&
+            og->isPlaying == true)
+        {
+            std::cout << "processNoteOn(): retrigger oscillator group " <<
+                i << std::endl;
+            og->osc1->noteOn(pitch, velocity, true);
+            return;
+        }
+    }
 
-		// First try to assign note to an oscillator group that has been
-		// playing a note with the same pitch and source.
-		for (i = 0; i < POLYPHONY; i++) {
-			if (oscillatorGroup[i]->notePitch == pitch &&
-				oscillatorGroup[i]->noteSource == JACK_MIDI &&
-				oscillatorGroup[i]->isPlaying == true)
-			{
-				// An oscillator group found. That group will play note data
-				// at sortedNoteTime[pitch].
-				return;
-			}
-		}
+    // Then try to find a free oscillator group
+    for (int i = 0; i < POLYPHONY; i++) {
+        OscillatorGroup * og = oscillatorGroup[i];
+        if (og->isPlaying == false) {
+            std::cout << "processNoteOn(): assign to oscillator group " <<
+                i << std::endl;
+            og->osc1->noteOn(pitch, velocity, false);
+            og->notePitch = pitch;
+            og->noteSource = source;
+            og->isPlaying = true;
+            return;
+        }
+    }
 
-		// The try to find a free oscillator group.
-		for (i = 0; i < POLYPHONY; i++) {
-			if (oscillatorGroup[i]->isPlaying == false) {
-				oscillatorGroup[i]->notePitch = pitch;
-				oscillatorGroup[i]->isPlaying = true;
-				return;
-			}
-		}
-
-		// Here the note is simply discarded.
-		sortedNoteCount[pitch]--;
-	}
-	else {
-		// source == TEXT_KEYBOARD
-
-		// First try to find and retrigger an oscillator group with the same
-		// note pitch and note source
-
-		for (i = 0; i < POLYPHONY; i++) {
-			if (oscillatorGroup[i]->notePitch == pitch &&
-				oscillatorGroup[i]->noteSource == TEXT_KEYBOARD &&
-				oscillatorGroup[i]->isPlaying == true)
-			{
-				oscillatorGroup[i]->osc1->noteOn(pitch, velocity, true);
-				return;
-			}
-		}
-
-		// Then try to find a free oscillator group
-		for (i = 0; i < POLYPHONY; i++) {
-			if (oscillatorGroup[i]->isPlaying == false) {
-				oscillatorGroup[i]->osc1->noteOn(pitch, velocity, false);
-				oscillatorGroup[i]->notePitch = pitch;
-				oscillatorGroup[i]->noteSource = source;
-				oscillatorGroup[i]->isPlaying = true;
-				return;
-			}
-		}
-	}
 }
 
 // Processes a "Note off" event from GUI or JACK MIDI port.
+// A complicated, buggy version which counts tremolo notes.
+/*
 void Synthesizer::processNoteOff(unsigned char pitch, unsigned short time,
 NoteSource source)
 {
@@ -588,8 +555,17 @@ NoteSource source)
 
 	unsigned int i;
 	if (source == JACK_MIDI) {
+        std::cout << "processNoteOff(): source is JACK_MIDI" << std::endl;
+
+        // Index in sortedNoteTime and sortedNoteVelocity
 		unsigned int index;
+
+
 		if (sortedNoteCount[pitch] == MAX_TREMOLO_NOTES) {
+            std::cout << "processNoteOff(JACK_MIDI): pitch " <<
+               (int)pitch <<
+                ": MAX_TREMOLO_NOTES reached with sortedNoteCount" <<
+                std::endl;
 			// Note off event overrides last event if it is note on.
 			index = pitch * MAX_TREMOLO_NOTES + sortedNoteCount[pitch];
 			if (sortedNoteVelocity[index] < 128) {
@@ -598,11 +574,16 @@ NoteSource source)
 			return;
 		}
 
+        std::cout << "processNoteOff(JACK_MIDI): scanning for a playing" <<
+            " oscillator" << std::endl;
 		for (i = 0; i < POLYPHONY; i++) {
 			if (oscillatorGroup[i]->notePitch == pitch &&
 				oscillatorGroup[i]->noteSource == source &&
 				oscillatorGroup[i]->isPlaying == true)
 			{
+                std::cout << "processNoteOff(JACK_MIDI): index " << i <<
+                    "matches." << std::endl;
+
 				index = pitch * MAX_TREMOLO_NOTES + sortedNoteCount[pitch];
 
 				// If a "Note On" and a "Note Off" event with the same
@@ -634,6 +615,36 @@ NoteSource source)
 		}
 	}
 }
+*/
+
+// Processes a "Note off" event from GUI or JACK MIDI port.
+// A simple version without handling of tremolo notes
+// (i.e. multiple MIDI notes at the same key)
+void Synthesizer::processNoteOff(unsigned char pitch, unsigned short time,
+NoteSource source)
+{
+	std::cout << "processNoteOff(): pitch " << (int)pitch <<
+	", time " << time << ", source " << (int)source << std::endl;
+
+    // source == TEXT_KEYBOARD
+    for (int i = 0; i < POLYPHONY; i++) {
+        if (oscillatorGroup[i]->notePitch == pitch &&
+            oscillatorGroup[i]->noteSource == source &&
+            oscillatorGroup[i]->isPlaying == true)
+        {
+            std::cout << "processNoteOff(): oscillator group " << i <<
+                " matches, turn it off." << std::endl;
+             oscillatorGroup[i]->osc1->noteOff();
+             return;
+        }
+    }
+    std::cout << "processNoteOff(): NO oscillator group matches!" <<
+        std::endl;
+}
+
+
+
+
 
 // Processes an "All notes off" event from GUI or JACK MIDI port.
 void Synthesizer::processFastMute(NoteSource source)
@@ -747,16 +758,16 @@ void Synthesizer::printSortedNotes()
 {
 	unsigned int pitch, count, index, endIndex;
 
-	std::cout << "printSortedNotes() starts" << std::endl;
-
-	for (pitch = 0; pitch < 128; pitch++) {
+	for (pitch = 0; pitch < MIDI_PITCHES; pitch++) {
 		count = sortedNoteCount[pitch];
 		if (count > 0) {
 			index = pitch * MAX_TREMOLO_NOTES;
 			endIndex = index + count;
-			std::cout << "pitch " << pitch << ":";
+			std::cout << "printSortedNotes(): pitch " << pitch <<
+                ": (time,velocity) = ";                
 			for (; index < endIndex; index++) {
-				std::cout << " (" << sortedNoteTime[index] << "," <<
+				std::cout << " (" <<
+                    sortedNoteTime[index] << "," <<
 					(int)sortedNoteVelocity[index] << ")";
 			}
 			std::cout << std::endl;

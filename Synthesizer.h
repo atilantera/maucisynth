@@ -35,10 +35,11 @@
 // How many notes can be played simultaneously
 const unsigned int POLYPHONY = 8;
 
-// How many notes from the same key can be played in buffer
+// How many notes from the same key can be played during the processing
+// of one JACK buffer.
 // (Usually buffer size is 16..4096 samples, which is 0.4 .. 9.3 msec
 // @ 44100 Hz samplerate.)
-const unsigned int MAX_TREMOLO_NOTES = 16;
+const unsigned int MAX_TREMOLO_NOTES = 4;
 
 // Number of possible MIDI note pitches.
 // 0   = double contra C (C-1 or C,,,)
