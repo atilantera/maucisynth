@@ -1,3 +1,4 @@
 *.o
 gmon.out
-gprof-report.txt
+gprof_report.txt
+.*.swp
