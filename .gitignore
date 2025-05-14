@@ -1,1 +1,3 @@
 *.o
+gmon.out
+gprof-report.txt

@@ -328,7 +328,7 @@ void SynthGui::guiFocusOut() {
 		keyIsPressed[i] = false;
 	}
 	pthread_mutex_unlock(&keyboardMutex);
-	synthEvents.addAllNotesOff(computerKeyboard);
+	synthEvents.addAllNotesOff(TEXT_KEYBOARD);
 }
 
 void SynthGui::onKeyPress(GdkEventKey * pKey) {
@@ -353,7 +353,7 @@ void SynthGui::onKeyPress(GdkEventKey * pKey) {
 			if (keyIsPressed[i] == true) {
 				keyIsPressed[i] = false;
 				midiKey = baseOctave * 12 + i;
-				synthEvents.addNoteOff(midiKey, computerKeyboard);
+				synthEvents.addNoteOff(midiKey, TEXT_KEYBOARD);
 			}
 		}
 		baseOctave++;
@@ -363,14 +363,14 @@ void SynthGui::onKeyPress(GdkEventKey * pKey) {
 			if (keyIsPressed[i] == true) {
 				keyIsPressed[i] = false;
 				midiKey = baseOctave * 12 + i;
-				synthEvents.addNoteOff(midiKey, computerKeyboard);
+				synthEvents.addNoteOff(midiKey, TEXT_KEYBOARD);
 			}
 		}
 		baseOctave--;
 	}
 	if (key < NUM_PIANO_KEYS) {
 		midiKey = baseOctave * 12 + key;
-		synthEvents.addNoteOn(midiKey, 100, computerKeyboard);
+		synthEvents.addNoteOn(midiKey, 100, TEXT_KEYBOARD);
 	}
 	keyIsPressed[key] = true;
 	pthread_mutex_unlock(&keyboardMutex);
@@ -390,7 +390,7 @@ void SynthGui::onKeyRelease(GdkEventKey * pKey) {
 	pthread_mutex_lock(&keyboardMutex);
 	if (key < 25) {
 		midiPitch = baseOctave * 12 + key;
-		synthEvents.addNoteOff(midiPitch, computerKeyboard);
+		synthEvents.addNoteOff(midiPitch, TEXT_KEYBOARD);
 	}
 	keyIsPressed[key] = FALSE;
 	pthread_mutex_unlock(&keyboardMutex);

@@ -1,7 +1,26 @@
 CC=g++
 LD=g++
-CFLAGS= -std=c++0x -Wall -Wextra -pedantic -march=native -O2 -g -pg \
-        `pkg-config --cflags gtk+-2.0` 
+
+# CFLAGS:
+# -std=c++0x
+#     version of C++ standard
+# -Wall -Wextra -pedantic
+#     produces lots of warnings for the developer
+# -march=native
+#     compiles for the processor architecture of the current system
+# -O2
+#     optimization level
+# -g -pg
+#     add debug and profiling data
+# `pkg-config --cflags gtk+-2.0`
+#     bindings for GTK+ 2.0 library
+
+# Meticulous development options
+#CFLAGS= -std=c++0x -Wall -Wextra -pedantic -march=native -O2 -g -pg \
+#        `pkg-config --cflags gtk+-2.0`
+
+# Quick development
+CFLAGS= -std=c++0x -march=native `pkg-config --cflags gtk+-2.0`
 LIBS=-ljack -lm -pg `pkg-config --libs gtk+-2.0`
 OBJFILES=EventBuffer.o main.o LowFrequencyOscillator.o LowpassFilter.o \
         MainOscillator.o Oscillator.o OscillatorGroup.o Synthesizer.o \

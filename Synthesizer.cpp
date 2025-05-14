@@ -375,32 +375,32 @@ void Synthesizer::processGuiEvents()
 		pitch = *ptr++;
 		velocity = *ptr++;
 
-		if (*ptr++ == jackMidi) {
-			source = jackMidi;
+		if (*ptr++ == JACK_MIDI) {
+			source = JACK_MIDI;
 		}
 		else {
-			source = computerKeyboard;
+			source = TEXT_KEYBOARD;
 		}
 		processNoteOn(pitch, velocity, 0, source);
 		break;
 
 		case 0x02: /* note off */
 		pitch = *ptr++;
-		if (*ptr++ == jackMidi) {
-			source = jackMidi;
+		if (*ptr++ == JACK_MIDI) {
+			source = JACK_MIDI;
 		}
 		else {
-			source = computerKeyboard;
+			source = TEXT_KEYBOARD;
 		}
 		processNoteOff(pitch, 0, source);
 		break;
 
 		case 0x03: /* all notes off */
-		if (*ptr++ == jackMidi) {
-			source = jackMidi;
+		if (*ptr++ == JACK_MIDI) {
+			source = JACK_MIDI;
 		}
 		else {
-			source = computerKeyboard;
+			source = TEXT_KEYBOARD;
 		}
 		processFastMute(source);
 		break;
@@ -439,8 +439,18 @@ void Synthesizer::processMidiEvents(jack_nframes_t nframes)
 	unsigned char channel;
 
 	for (eventNumber = 0; eventNumber < eventCount; eventNumber++) {
-
 		jack_midi_event_get(&event, midiBuffer, eventNumber);
+		// Print event data
+		std::cout << "MIDI Event: time=" << event.time << ", data:";
+		std::cout << std::hex;
+		ptr = (unsigned char *) event.buffer;
+		endPtr = ptr + event.size;
+		while (ptr < endPtr) {
+			std::cout << " " << (int)(*ptr);
+			ptr++;
+		}
+
+		std::cout << std::endl << std::dec;
 
 		ptr = event.buffer;
 		channel = *ptr & 0x0F;
@@ -452,30 +462,20 @@ void Synthesizer::processMidiEvents(jack_nframes_t nframes)
 
 		case 0x80: // Note Off
 			// ptr[1] is note pitch
-			processNoteOff(ptr[1], event.time, jackMidi);
+			processNoteOff(ptr[1], event.time, JACK_MIDI);
 			break;
 
 		case 0x90: // Note on
 			// ptr[1] is note pitch
 			// ptr[2] is note velocity
-			processNoteOn(ptr[1], ptr[2], event.time, jackMidi);
+			processNoteOn(ptr[1], ptr[2], event.time, JACK_MIDI);
 			break;
 
-		case 0xB0: // Controller change
+		case 0xb0: // Controller change
 			processMidiControlChange(ptr[1], ptr[2]);
 			break;
 		}
 
-		// Print event data
-//		std::cout << "MIDI Event: time=" << event.time << ", data:";
-//		std::cout << std::hex;
-//		ptr = (unsigned char *) event.buffer;
-//		endPtr = ptr + event.size;
-//		while (ptr < endPtr) {
-//			std::cout << " " << (int)(*ptr);
-//			ptr++;
-//		}
-//		std::cout << std::endl << std::dec;
 	}
 	std::cout.flush();
 
@@ -486,11 +486,14 @@ void Synthesizer::processMidiEvents(jack_nframes_t nframes)
 void Synthesizer::processMidiControlChange(unsigned char type,
 	unsigned char value)
 {
-	switch (type) {
+    std::cout << "processMidiControlChange(): type " << (int)type <<
+	", value " << (int)value << std::endl;
+
+    switch (type) {
 	// case 0x07: // Channel volume (MSB)
 	// case 0x27: // Channel volume (LSB)
 	case 0x7b: // All notes off
-		processFastMute(jackMidi);
+		processFastMute(JACK_MIDI);
 	}
 }
 
@@ -506,11 +509,12 @@ void Synthesizer::processMidiControlChange(unsigned char type,
 void Synthesizer::processNoteOn(unsigned char pitch, unsigned char velocity,
 unsigned short time, NoteSource source)
 {
-	std::cout << "processNoteOn(" << (int)pitch << "," << (int)velocity <<
-		"," << time << "," << (int)source << std::endl;
+	std::cout << "processNoteOn():  pitch " << (int)pitch <<
+	", time " << time << ", source " << (int)source << 
+    ", velocity " << (int)velocity << std::endl;
 
 	unsigned int i;
-	if (source == jackMidi) {
+	if (source == JACK_MIDI) {
 		unsigned int index = sortedNoteCount[pitch];
 		if (sortedNoteCount[pitch] == MAX_TREMOLO_NOTES) {
 			return;
@@ -525,7 +529,7 @@ unsigned short time, NoteSource source)
 		// playing a note with the same pitch and source.
 		for (i = 0; i < POLYPHONY; i++) {
 			if (oscillatorGroup[i]->notePitch == pitch &&
-				oscillatorGroup[i]->noteSource == jackMidi &&
+				oscillatorGroup[i]->noteSource == JACK_MIDI &&
 				oscillatorGroup[i]->isPlaying == true)
 			{
 				// An oscillator group found. That group will play note data
@@ -547,14 +551,14 @@ unsigned short time, NoteSource source)
 		sortedNoteCount[pitch]--;
 	}
 	else {
-		// source == computerKeyboard
+		// source == TEXT_KEYBOARD
 
 		// First try to find and retrigger an oscillator group with the same
 		// note pitch and note source
 
 		for (i = 0; i < POLYPHONY; i++) {
 			if (oscillatorGroup[i]->notePitch == pitch &&
-				oscillatorGroup[i]->noteSource == computerKeyboard &&
+				oscillatorGroup[i]->noteSource == TEXT_KEYBOARD &&
 				oscillatorGroup[i]->isPlaying == true)
 			{
 				oscillatorGroup[i]->osc1->noteOn(pitch, velocity, true);
@@ -579,11 +583,11 @@ unsigned short time, NoteSource source)
 void Synthesizer::processNoteOff(unsigned char pitch, unsigned short time,
 NoteSource source)
 {
-	std::cout << "processNoteOff(" << (int)pitch << "," << time << "," <<
-		(int)source << std::endl;
+	std::cout << "processNoteOff(): pitch " << (int)pitch <<
+	", time " << time << ", source " << (int)source << std::endl;
 
 	unsigned int i;
-	if (source == jackMidi) {
+	if (source == JACK_MIDI) {
 		unsigned int index;
 		if (sortedNoteCount[pitch] == MAX_TREMOLO_NOTES) {
 			// Note off event overrides last event if it is note on.
@@ -619,7 +623,7 @@ NoteSource source)
 		}
 	}
 	else {
-		// source == computerKeyboard
+		// source == TEXT_KEYBOARD
 		for (i = 0; i < POLYPHONY; i++) {
 			if (oscillatorGroup[i]->notePitch == pitch &&
 				oscillatorGroup[i]->noteSource == source &&
