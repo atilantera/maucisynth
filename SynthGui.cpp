@@ -42,7 +42,7 @@ SynthGui::SynthGui(EventBuffer & eventBuffer,
 
 	/* Contents of the main window */
 	mainFixed = gtk_fixed_new();
-	gtk_container_add(GTK_CONTAINER(mainWindow), mainFixed);
+	gtk_container_add(GTK_CONTAINER(mainWindow), mainFixed); // @suppress("Function cannot be resolved")
 
 	createFilterControls();
 	createLfo1Controls();

@@ -20,7 +20,7 @@ LD=g++
 #        `pkg-config --cflags gtk+-2.0`
 
 # Quick development
-CFLAGS= -std=c++0x -march=native `pkg-config --cflags gtk+-2.0`
+CFLAGS= -std=c++0x -march=native -g -pg `pkg-config --cflags gtk+-2.0`
 LIBS=-ljack -lm -pg `pkg-config --libs gtk+-2.0`
 OBJFILES=EventBuffer.o main.o LowFrequencyOscillator.o LowpassFilter.o \
         MainOscillator.o Oscillator.o OscillatorGroup.o Synthesizer.o \
