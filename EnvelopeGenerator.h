@@ -50,10 +50,10 @@ private:
     // envelopePhase is the current ADSR curve phase.
    	EnvelopePhase envelopePhase;
 
-    void renderAttack(float * outputBuffer);
-    void renderDecay(float * outputBuffer);
-    void renderSustain(float * outputBuffer);
-    void renderRelease(float * outputBuffer);
+    void renderAttack(float * outputBuffer, int samples);
+    void renderDecay(float * outputBuffer, int samples);
+    void renderSustain(float * outputBuffer, int samples);
+    void renderRelease(float * outputBuffer, int samples);
 
 };
 
