@@ -15,8 +15,9 @@ class EnvelopeGenerator {
 public:
 	EnvelopeGenerator(unsigned int sampleRate, unsigned int bufferLength);
 
-	void generateEnvelope(float outputBuffer[]);
+	void generateEnvelope(float * outputBuffer);
 	void addEnvelopeChange(unsigned int time, EnvelopePhase phase);
+    EnvelopePhase getPhase() const;
 
 private:
 	// Sample rate in samples per second

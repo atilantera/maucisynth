@@ -22,9 +22,9 @@ LD=g++
 # Quick development
 CFLAGS= -std=c++0x -march=native -g -pg `pkg-config --cflags gtk+-2.0`
 LIBS=-ljack -lm -pg `pkg-config --libs gtk+-2.0`
-OBJFILES=EventBuffer.o main.o LowFrequencyOscillator.o LowpassFilter.o \
-        MainOscillator.o Oscillator.o OscillatorGroup.o Synthesizer.o \
-        SynthGui.o SynthParameters.o
+OBJFILES=EnvelopeGenerator.o EventBuffer.o main.o LowFrequencyOscillator.o \
+		LowpassFilter.o MainOscillator.o Oscillator.o OscillatorGroup.o \
+		Synthesizer.o SynthGui.o SynthParameters.o
 EXECUTABLE=maucisynth
 RM=rm -f
 
@@ -34,6 +34,9 @@ all: main
 	
 main: $(OBJFILES)
 	$(LD) -o $(EXECUTABLE) $(OBJFILES) $(LIBS)
+
+EnvelopeGenerator.o: EnvelopeGenerator.cpp EnvelopeGenerator.h
+	$(CC) $(CFLAGS) -c EnvelopeGenerator.cpp
 
 EventBuffer.o: EventBuffer.cpp EventBuffer.h tests/testing.h
 	$(CC) $(CFLAGS) -c EventBuffer.cpp
