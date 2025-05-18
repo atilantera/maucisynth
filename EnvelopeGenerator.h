@@ -11,31 +11,49 @@
 enum EnvelopePhase { ATTACK, DECAY, SUSTAIN, RELEASE, OFF, FAST_MUTE,
     RETRIGGER };
 
+#define ENVELOPE_CHANGES_PER_BUFFER 4
+
 class EnvelopeGenerator {
 public:
-	EnvelopeGenerator(unsigned int sampleRate, unsigned int bufferLength);
+	EnvelopeGenerator(int sampleRate, int bufferLength);
 
 	void generateEnvelope(float * outputBuffer);
-	void addEnvelopeChange(unsigned int time, EnvelopePhase phase);
+	void addEnvelopeChange(int time, EnvelopePhase phase);
     EnvelopePhase getPhase() const;
+
+    void setAttackTime(int samples);
+    void setDecayTime(int samples);
+    void setSustainLevel(float level);
+    void setReleaseTime(int samples);
 
 private:
 	// Sample rate in samples per second
-	unsigned int sampleRate;
+	int sampleRate;
 
 	// Buffer length in samples per buffer
-	unsigned int bufferLength;
+	int bufferLength;
+
+    // Maximum number of envelope changes per buffer
+    int envelopeChangeCount;
+    int envelopeChangeTime[ENVELOPE_CHANGES_PER_BUFFER];
+    int envelopeChangePhase[ENVELOPE_CHANGES_PER_BUFFER];
+
 
 	// Parameters: Amplitude envelope (ADSR curve) parameters.
 	// Attack, decay and release are in samples.
 	// Sustain is relative amplitude: 0..1.
-	unsigned int attackTime;
-	unsigned int decayTime;
-	float sustainVolume;
-	unsigned int releaseTime;
+	int attackTime;
+	int decayTime;
+	float sustainLevel;
+	int releaseTime;
 
     // envelopePhase is the current ADSR curve phase.
    	EnvelopePhase envelopePhase;
+
+    void renderAttack(float * outputBuffer);
+    void renderDecay(float * outputBuffer);
+    void renderSustain(float * outputBuffer);
+    void renderRelease(float * outputBuffer);
 
 };
 
