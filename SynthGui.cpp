@@ -26,7 +26,7 @@ SynthGui::SynthGui(EventBuffer & eventBuffer,
 			SynthGui::guiFocusOutCallback), NULL);
 
 	gtk_window_set_title(GTK_WINDOW(mainWindow), "maucisynth");
-	gtk_widget_set_size_request(mainWindow, 1000, 300);
+	gtk_widget_set_size_request(mainWindow, 1000, 500);
 
 	/* Capture keyboard events */
 	for (int i = 0; i < NUM_KEYS; i++) {
@@ -47,6 +47,7 @@ SynthGui::SynthGui(EventBuffer & eventBuffer,
 	createFilterControls();
 	createLfo1Controls();
 	createOscillator1Controls();
+    createChorusControls();
 
 	gtk_widget_show_all(mainWindow);
 }
@@ -61,7 +62,7 @@ void SynthGui::createFilterControls() {
     GtkWidget * vscale;
     
     frame = gtk_frame_new(NULL);
-	gtk_fixed_put(GTK_FIXED(mainFixed), frame, 900, 0);
+	gtk_fixed_put(GTK_FIXED(mainFixed), frame, 740, 0);
 	gtk_frame_set_label(GTK_FRAME(frame), "Filtering");
 	gtk_widget_set_size_request(GTK_WIDGET(frame), 100, 175);
 
@@ -293,6 +294,42 @@ void SynthGui::createOscillator1Controls() {
 		(gpointer)"osc1release");
 	gtk_fixed_put(GTK_FIXED(fixed), slider, 186, 20);
 }
+
+void SynthGui::createChorusControls() {
+    GtkWidget * frame;
+    GtkWidget * fixed;
+    GtkWidget * label;
+    GtkWidget * vscale;
+
+    // Chorus frame    
+    frame = gtk_frame_new(NULL);
+	gtk_fixed_put(GTK_FIXED(mainFixed), frame, 10, 180);
+	gtk_frame_set_label(GTK_FRAME(frame), "Chorus");
+	gtk_widget_set_size_request(GTK_WIDGET(frame), 100, 175);
+
+	fixed = gtk_fixed_new();
+	gtk_container_add(GTK_CONTAINER(frame), fixed);
+
+    // Depth
+    label = gtk_label_new("Depth");
+	gtk_fixed_put(GTK_FIXED(fixed), label, 5, 0);
+
+    float chorusStep = 0.01 * (MaxChorusDepth - MinChorusDepth); 
+	vscale = gtk_vscale_new_with_range(MinChorusDepth, MaxChorusDepth,
+        chorusStep);
+	gtk_widget_set_size_request(GTK_WIDGET(vscale), 32, 128);
+	gtk_range_set_inverted(GTK_RANGE(vscale), TRUE);
+	gtk_range_set_update_policy(GTK_RANGE(vscale), GTK_UPDATE_CONTINUOUS);
+	gtk_range_set_value(GTK_RANGE(vscale),
+			0.5 * (MinChorusDepth + MaxChorusDepth));
+
+	g_signal_connect(vscale, "value_changed",
+		G_CALLBACK(SynthGui::sliderChangeCallback),
+		(gpointer)"chorusDepth");
+	gtk_fixed_put(GTK_FIXED(fixed), vscale, 10, 20);
+
+}
+
 
 gboolean SynthGui::guiFocusOutCallback() {
 	SynthGui::guiInstance->guiFocusOut();

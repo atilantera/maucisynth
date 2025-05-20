@@ -88,6 +88,12 @@ const unsigned int MaxSustainVolume = 100;
 const unsigned int MinReleaseTime   = 1;
 const unsigned int MaxReleaseTime   = 3000;
 
+// Chorus effect
+const float MinChorusDepth = 0.0;     // Amount of duplicate signal
+const float MaxChorusDepth = 1.0;
+const float MinChorusFrequency = 0.1; // Hz
+const float MaxChorusFrequency = 1;   // Hz
+
 // Class OscillatorParameters has parameters of one MainOscillator-
 // LowFrequencyOscillator combination.
 class OscillatorParameters {

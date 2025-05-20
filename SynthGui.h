@@ -38,6 +38,7 @@ private:
 	void createLfo1Controls();
 	void createOscillator1Controls();
 	void createFilterControls();
+    void createChorusControls();
 
 	// These static members are wrappers for GTK+ callbacks.
 	// C++ nonstatic member function pointers are incompatible

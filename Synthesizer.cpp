@@ -244,6 +244,7 @@ void Synthesizer::generateSound(jack_nframes_t nframes)
 	}
 
 	filter.doFiltering(outputBuffer, bufferLength);
+    chorus.applyEffect(outputBuffer, bufferLength);
 }
 
 // Synthesizes sound of an oscillator group playing adjacent MIDI notes.

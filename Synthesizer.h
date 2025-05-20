@@ -21,6 +21,7 @@
 #include <jack/thread.h>
 #include <pthread.h>
 
+#include "ChorusEffect.h"
 #include "EventBuffer.h"
 #include "LowFrequencyOscillator.h"
 #include "LowpassFilter.h"
@@ -92,6 +93,9 @@ private:
 
 	// Filters
 	LowpassFilter filter;
+
+    // Effects
+    ChorusEffect chorus;
 
 	bool initJack();
 	static int jackCallback(jack_nframes_t nframes, void * arg);
