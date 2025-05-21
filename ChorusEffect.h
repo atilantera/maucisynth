@@ -18,17 +18,13 @@ public:
 class ChorusEffect {
 public:
     ChorusEffect();
-    ChorusEffect(int ringBufferLength);
     ~ChorusEffect();
 
     void applyEffect(float * soundBuffer, unsigned int bufferLength);
 
 private:
     float samplerate;
-    float * ringBuffer;
-    int ringLength;
-    int ringBufferIndexIn;
-    int ringBufferIndexOut;
+    RingBuffer * ringBuffer;
 
     float mixAmount; // 0..1: amount of duplicate signal
     float baseDelay; // base delay in samples    

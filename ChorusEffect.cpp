@@ -27,47 +27,19 @@ float RingBuffer::get() {
 
 
 ChorusEffect::ChorusEffect() {
-    this->samplerate = 44100;
-    ringLength = 1024;
-    ringBuffer = new float[ringLength];
-    for (int i = 0; i < ringLength; i++) {
-        ringBuffer[i] = 0;
-    }
-    ringBufferIndexIn = 0;
-
-    mixAmount = 1.0;
-    baseDelay = ringLength / 2 - 1;
-    delay = baseDelay;
-    dDelay = 1;
+    samplerate = 44100;
+    ringBuffer = new RingBuffer(48000);
+    ringBuffer->nextOut = 24000;
 }
-
-ChorusEffect::ChorusEffect(int ringBufferLength) {
-    this->samplerate = 44100;
-    ringLength = ringBufferLength;
-    ringBuffer = new float[ringLength];
-    for (int i = 0; i < ringLength; i++) {
-        ringBuffer[i] = 0;
-    }
-    ringBufferIndexIn = 0;
-
-    mixAmount = 1.0;
-    baseDelay = ringLength / 2 - 1;
-    delay = baseDelay;
-    dDelay = 1;
-}
-
-
 
 ChorusEffect::~ChorusEffect() {
-    delete [] ringBuffer;
+    delete ringBuffer;
 }
 
 void ChorusEffect::applyEffect(float * soundBuffer, unsigned int bufferLength) {
     for (unsigned int i = 0; i < bufferLength; i++) {
-        ringBuffer[ringBufferIndexIn] = soundBuffer[i];
-        ringBufferIndexIn = (ringBufferIndexIn + 1) % ringLength;
-        ringBufferIndexOut = (ringBufferIndexIn + 1 - 20) % ringLength;
-        soundBuffer[i] = ringBuffer[ringBufferIndexOut];
+        ringBuffer->put(soundBuffer[i]);
+        soundBuffer[i] = 0.5 * (soundBuffer[i] + ringBuffer->get());
     }
 }
 
