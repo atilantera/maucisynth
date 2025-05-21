@@ -3,3 +3,4 @@ gmon.out
 gprof_report.txt
 .*.swp
 tests/*test
+tests/gmon.out

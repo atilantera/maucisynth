@@ -5,7 +5,11 @@ CFLAGS=-std=c++0x -g -pg
 LIBS=-pg -ljack -lm -lrt
 RM=rm -f
 
-all: envelopetest
+all: chorustest envelopetest 
+
+chorustest: ChorusTest.o ../ChorusEffect.o
+	$(LD) $(LIBS) ChorusTest.o ../ChorusEffect.o \
+	-o chorustest
 
 envelopetest: EnvelopeTest.o ../EnvelopeGenerator.o
 	$(LD) $(LIBS) EnvelopeTest.o ../EnvelopeGenerator.o \
@@ -15,6 +19,9 @@ clean:
 	$(RM) *.o
 	$(RM) ./unittests ./performancetests
 
+ChorusTest.o: ChorusTest.cpp
+	$(CC) $(CFLAGS) -c ChorusTest.cpp
+	
 EnvelopeTest.o: EnvelopeTest.cpp
 	$(CC) $(CFLAGS) -c EnvelopeTest.cpp
 	
